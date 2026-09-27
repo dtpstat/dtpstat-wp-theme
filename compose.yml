@@ -1,0 +1,77 @@
+# Стенд пакета: чистый WP 6.9.4 + MariaDB 11.4, порт 8086 (8080–8085 заняты другими стендами).
+# Тема dtpstat-child примаунчена из репозитория — правки в theme/ видны сразу.
+# Накатку контента делает bin/install.sh (wp-cli через сервис wpcli).
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: wplocal
+      MARIADB_ROOT_PASSWORD: wplocalroot
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  wp:
+    image: wordpress:6.9.4-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WP_PORT:-8086}:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wplocal
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+        $$__host = $$_SERVER['HTTP_HOST'] ?? 'localhost:8086';
+        $$__proto = (!empty($$_SERVER['HTTPS']) && $$_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        define('WP_HOME', $$__proto . '://' . $$__host);
+        define('WP_SITEURL', $$__proto . '://' . $$__host);
+        define('WP_AUTO_UPDATE_CORE', false);
+        define('WP_DEBUG', true);
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', false);
+    volumes:
+      - wp_data:/var/www/html
+      - ./theme/dtpstat-child:/var/www/html/wp-content/themes/dtpstat-child:ro
+      - ./php-uploads.ini:/usr/local/etc/php/conf.d/zz-dtpstat.ini:ro
+
+  # разовые команды: docker compose run --rm wpcli wp <команда>
+  wpcli:
+    image: wordpress:cli-php8.3
+    depends_on:
+      db:
+        condition: service_healthy
+      wp:
+        condition: service_started
+    # общий сетевой стек с wp: wp-cli обращается к «самому сайту» по localhost:80
+    # (например wp import/eval, дергущие REST), а «сайт» для wp_http_validate_url()
+    # должен быть на localhost — приватные IP он отбрасывает
+    network_mode: "service:wp"
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wplocal
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      # пакет примаунчен, чтобы wp import видел content/export.xml (/pkg/...)
+      - .:/pkg:ro
+      # тема должна быть видна и wp-cli (иначе wp theme activate не найдёт style.css)
+      - ./theme/dtpstat-child:/var/www/html/wp-content/themes/dtpstat-child:ro
+
+volumes:
+  db_data:
+  wp_data:

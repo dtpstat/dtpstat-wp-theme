@@ -1,0 +1,142 @@
+{
+  "source_url": "http://localhost:8080",
+  "blogname": "Карта ДТП",
+  "blogdescription": "",
+  "pages": {
+    "front": "home",
+    "posts": "news",
+    "privacy": "privacy-policy"
+  },
+  "options": {
+    "permalink_structure": "/%postname%/",
+    "posts_per_page": 18,
+    "date_format": "d.m.Y",
+    "time_format": "H:i",
+    "start_of_week": 1
+  },
+  "site_icon": {
+    "file": "2026/08/367-cropped-2.png"
+  },
+  "site_logo": {
+    "file": "2026/08/31-free-icon-car-crash-3664541.png"
+  },
+  "categories": [
+    {
+      "name": "Uncategorized",
+      "slug": "uncategorized",
+      "count": 6
+    },
+    {
+      "name": "Без рубрики",
+      "slug": "%d0%b1%d0%b5%d0%b7-%d1%80%d1%83%d0%b1%d1%80%d0%b8%d0%ba%d0%b8",
+      "count": 25
+    },
+    {
+      "name": "Краудфандинг",
+      "slug": "%d0%ba%d1%80%d0%b0%d1%83%d0%b4%d1%84%d0%b0%d0%bd%d0%b4%d0%b8%d0%bd%d0%b3",
+      "count": 0
+    },
+    {
+      "name": "Новости «Vision zero»",
+      "slug": "%d0%bd%d0%be%d0%b2%d0%be%d1%81%d1%82%d0%b8-vision-zero",
+      "count": 1
+    },
+    {
+      "name": "Обзорные статьи",
+      "slug": "%d0%be%d0%b1%d0%b7%d0%be%d1%80%d0%bd%d1%8b%d0%b5-%d1%81%d1%82%d0%b0%d1%82%d1%8c%d0%b8",
+      "count": 0
+    },
+    {
+      "name": "Отчёты",
+      "slug": "%d0%be%d1%82%d1%87%d1%91%d1%82%d1%8b",
+      "count": 1
+    }
+  ],
+  "menus": {
+    "footer": {
+      "source_menu": "web-agency-gb-footer-menu",
+      "items": [
+        {
+          "title": "Блог и исследования",
+          "page": "news"
+        },
+        {
+          "title": "Скачать данные",
+          "page": "download"
+        },
+        {
+          "title": "О проекте",
+          "page": "project"
+        },
+        {
+          "title": "Станьте частью команды",
+          "page": "join-team"
+        }
+      ]
+    },
+    "primary": {
+      "source_menu": "web-agency-gb-main-menu",
+      "items": [
+        {
+          "title": "Блог и исследования",
+          "page": "news"
+        },
+        {
+          "title": "Скачать данные",
+          "page": "download"
+        },
+        {
+          "title": "О проекте",
+          "page": "project"
+        },
+        {
+          "title": "Станьте частью команды",
+          "page": "join-team"
+        }
+      ]
+    }
+  },
+  "plugins": [
+    {
+      "name": "crop-thumbnails",
+      "version": "1.9.7"
+    },
+    {
+      "name": "otter-blocks",
+      "version": "3.1.5"
+    },
+    {
+      "name": "post-types-order",
+      "version": "2.4.6"
+    },
+    {
+      "name": "templates-patterns-collection",
+      "version": "1.2.24"
+    }
+  ],
+  "themes": [
+    {
+      "name": "dtpstat-child",
+      "version": "0.1.0",
+      "status": "active"
+    },
+    {
+      "name": "neve",
+      "version": "4.2.3",
+      "status": "parent"
+    },
+    {
+      "name": "twentytwentyfour",
+      "version": "1.4",
+      "status": "inactive"
+    }
+  ],
+  "counts": {
+    "pages": 6,
+    "drafts": 1,
+    "posts": 31,
+    "persons": 4,
+    "sponsors": 5,
+    "media": 57
+  }
+}
