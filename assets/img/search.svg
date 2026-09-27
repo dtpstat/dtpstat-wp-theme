@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-hidden="true">
+  <!-- поиск, INSTANCE 264:1972: осевые линии штрихов из vector-network-3.bin.gz;
+       цвет наследует currentColor -->
+  <path d="M 14.00 7.00 C 14.00 10.87 10.87 14.00 7.00 14.00 C 3.13 14.00 0.00 10.87 0.00 7.00 C 0.00 3.13 3.13 0.00 7.00 0.00 C 10.87 0.00 14.00 3.13 14.00 7.00ZM 12.00 12.00 C 12.00 12.00 17.00 17.00 17.00 17.00" transform="translate(3.50,3.50)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

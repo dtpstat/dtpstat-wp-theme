@@ -1,0 +1,1043 @@
+/* ============================================================
+   dtpstat-child — вёрстка по макету dtpstat-design.fig
+   Токены сняты с design/document.agent.json
+   ============================================================ */
+
+:root {
+	--navy: #18334a;        /* заголовки, кнопки, текст */
+	--navy-soft: #4e6e87;   /* вторичный текст */
+	--red: #ff001a;         /* точка лого, разделители в списках */
+	--bg-soft: #f4f8fa;     /* фон футера, чипы-подложки, инпуты */
+	--chip: #b7d7e6;        /* чипы категорий */
+	--bar: #d1dee4;         /* трек прогресс-бара */
+	--line: rgba(24, 51, 74, 0.1); /* макет: Line 4/5 = #18334a @ 10% */
+	--shadow-header: 0 5px 15px #d4dadd;
+	--container: 896px;     /* 856px контент + 2×20px паддинг (в макете колонка ровно 856) */
+	--header-h: 65px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	font-family: 'Roboto', -apple-system, 'Segoe UI', sans-serif;
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 24px;
+	color: var(--navy);
+	background: #fff;
+	-webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--navy); }
+/* родительский Neve (style-main-new.min.css) на :hover красит ЛЮБУЮ кнопку
+   в белый (--primarybtnhovercolor) и в синий (--primarybtnhoverbg) — в теме
+   кнопки при наведении не перекрашиваются: пункты меню, шевроны календаря,
+   иконки и бургер остаются как были. У кого ховер свой (.dtp-btn, плитки
+   календаря, пункты дропдаунов) — правила специфичнее и перекроют это */
+button:hover { color: inherit; background-color: inherit; }
+img { max-width: 100%; height: auto; display: block; }
+
+/* ---------- контейнеры ---------- */
+
+.dtp-container { max-width: var(--container); margin: 0 auto; padding: 0 20px; }
+.dtp-container--wide { max-width: 1360px; }
+
+/* ---------- кнопки ---------- */
+
+.dtp-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px;
+	padding: 8px 20px;
+	border-radius: 10px; /* Frame 596 макета: r=10 и у тёмных, и у светлых кнопок */
+	background: var(--navy);
+	color: #fff !important;
+	font-size: 16px;
+	line-height: 24px;
+	font-weight: 500;
+	border: 0;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s;
+}
+/* при наведении кнопка целиком становится #4E6E87 (по правке Ильи);
+   без opacity — иначе полупрозрачность «разбавит» цвет поверх белого */
+.dtp-btn:hover { background: var(--navy-soft); color: #fff; }
+/* иконки внутри кнопок (стрелка скачивания) */
+.dtp-btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
+/* светлая кнопка (кнопки скачивания в макете) */
+.dtp-btn--soft { background: var(--bg-soft); color: var(--navy) !important; font-weight: 500; }
+.dtp-btn--soft:hover { opacity: 0.8; color: var(--navy); }
+
+/* ---------- хедер ---------- */
+
+.dtp-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: #fff;
+	box-shadow: var(--shadow-header);
+}
+.dtp-header__in {
+	/* лого и кнопка прибиты к КРАЯМ вьюпорта (20px), а не к центрированному
+	   контейнеру: иначе на широких экранах они «улетают» к середине
+	   (в макете на 1440 это то же самое: лого x=20, кнопка до 1420) */
+	max-width: none;
+	padding: 0 20px;
+	height: var(--header-h);
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+.dtp-logo { flex: 0 0 auto; display: flex; }
+/* официальный лого (dtpstat-pages) — 170×24; в макете он лежит в рамке 176×28 */
+.dtp-logo svg { width: 170px; height: 24px; }
+
+.dtp-nav { margin-left: auto; }
+.dtp-nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
+.dtp-nav a {
+	font-size: 16px;
+	line-height: 24px;
+	color: var(--navy);
+	white-space: nowrap;
+}
+/* текущая страница — полужирным, как в макете */
+.dtp-nav .current-menu-item > a,
+.dtp-nav .current_page_item > a { font-weight: 600; }
+/* «Поддержать проект» внутри мобильного меню (в шапке на телефонах её нет) */
+.dtp-nav__support { display: none; }
+
+/* кнопка «Поддержать проект»: 195×40 + полоска 165×4 под ней, торчит на 2px вниз (по макету) */
+.dtp-header .dtp-btn {
+	position: relative;
+	flex: 0 0 auto;
+	min-width: 195px;
+}
+/* полоска под кнопкой хедера — в макете это мини-прогресс-бар 165×4.
+   Палитра НЕ сжимается в залитую часть: градиент растянут на весь трек,
+   а трек-цвет сверху прикрывает незалитый хвост. Зелёный виден только
+   при 100% сбора; доля — та же переменная --fund-pct, что у больших полос */
+.dtp-header .dtp-btn::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 165px;
+	height: 4px;
+	margin-top: -2px;
+	border-radius: 2px;
+	background:
+		linear-gradient(90deg, var(--bar) 0, var(--bar) 0) right top / calc(100% - var(--fund-pct, 31.09%)) 100% no-repeat,
+		linear-gradient(90deg, #ff001a 0%, #ff7f24 26%, #ffb81f 53%, #17aa14 100%) left top / 100% 100% no-repeat;
+}
+
+/* бургер */
+.dtp-burger { display: none; }
+
+/* ---------- футер ---------- */
+
+.dtp-footer {
+	margin-top: 80px;
+	background: var(--bg-soft);
+	padding: 40px 0 32px;
+	/* в макете футер набран 16/24 (ссылки меню и контакты — боксы h=24) */
+	font-size: 16px;
+	line-height: 24px;
+}
+
+/* полоса сбора */
+.dtp-fund { display: flex; align-items: center; gap: 30px; }
+.dtp-fund__main { flex: 1 1 auto; }
+/* прогресс-бар сбора: трек-«пилюля» #D1DEE4, заливка радужным градиентом.
+   Ширина заливки = --fund-pct (dtp_fund() из functions.php), а градиент
+   растянут в 1/--fund-pct ширины (--fund-stretch), чтобы радуга всегда
+   шла на весь трек, а не на залитую часть */
+.dtp-fund__bar { height: 20px; border-radius: 10px; background: var(--bar); overflow: hidden; }
+.dtp-fund__fill {
+	display: block; height: 100%;
+	width: var(--fund-pct, 31.09%);
+	border-radius: 10px;
+	background: linear-gradient(90deg, #ff001a 0%, #ff7f24 26%, #ffb81f 53%, #17aa14 100%);
+	background-size: calc(100% * var(--fund-stretch, 3.2154)) 100%;
+}
+/* подпись под баром в макете 14px (боксы h=16) */
+.dtp-fund__row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; font-size: 14px; }
+.dtp-fund__raised { font-weight: 500; }
+.dtp-fund__days { color: var(--navy-soft); }
+
+.dtp-footer hr {
+	border: 0;
+	border-top: 1px solid var(--line);
+	margin: 40px 0;
+}
+
+/* три колонки */
+.dtp-fcols { display: grid; grid-template-columns: 380px 1fr 1fr; gap: 48px; }
+.dtp-fcol h4 {
+	margin: 0 0 12px;
+	font-size: 16px;
+	line-height: 24px;
+	font-weight: 700;
+}
+.dtp-fcol p { margin: 0; }
+.dtp-fcol--about p { line-height: 22px; }
+/* лого → текст 20 (в макете 5237+24 → 5285 при верхнем выравнивании колонок) */
+.dtp-fcol .dtp-logo svg { width: 170px; height: 24px; margin-bottom: 20px; }
+/* строки контактов и карты сайта идут с шагом 36px (макет: 5277 → 5313) */
+.dtp-fcol .dtp-contact { margin-bottom: 12px; }
+.dtp-fmenu { list-style: none; margin: 0; padding: 0; }
+.dtp-fmenu li + li { margin-top: 12px; }
+.dtp-fmenu li a { color: var(--navy); }
+.dtp-fmenu li a:hover { text-decoration: underline; }
+
+/* контакты (в контенте страниц идут в одну строку, как в макете).
+   По макету перед каждой строкой стоит иконка 18–20px (см. .dtp-contact--icon),
+   квадратик-буллет — фолбэк для строк без иконки */
+.dtp-contact { display: flex; align-items: center; gap: 10px; }
+.dtp-contact::before { content: ''; width: 10px; height: 10px; background: var(--navy); flex: 0 0 auto; }
+/* контакты в контенте: 20px (в футере 16), между строками 30 (макет: конец
+   «Telegramm» 3378 → иконка почты 3408); сверху 20 от интро; vertical-align top —
+   иначе инлайн-флекс берёт базовую линию у первой иконки (её нижний край), и у
+   конверта 14px она выше, чем у самолётика 20px → текст почты уезжает на 3px вниз */
+.dtp-entry .dtp-contact { display: inline-flex; vertical-align: top; margin: 20px 30px 0 0; font-size: 20px; }
+.dtp-contact--plain::before { display: none; }
+/* контакт с иконкой из макета: в футере 12px, в контенте 18–20px, зазор 5px */
+.dtp-contact--icon { gap: 5px; }
+.dtp-contact--icon::before { display: none; }
+.dtp-contact--icon svg { width: 12px; height: auto; fill: var(--navy); flex: 0 0 auto; }
+/* иконки для контента из БД (инлайнить svg нельзя) — CSS-mask, цвет через background */
+.dtp-ic {
+	display: inline-block; flex: 0 0 auto; background: var(--navy);
+	-webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
+}
+.dtp-ic--tg { --ic: url('../img/social/telegram.svg'); width: 20px; height: 20px; }
+.dtp-ic--mail { --ic: url('../img/envelope.svg?v=3'); width: 18px; height: 14px; }
+
+/* низ футера */
+.dtp-fbottom { display: flex; align-items: center; gap: 15px; }
+.dtp-cc { display: flex; gap: 8px; }
+.dtp-cc svg { width: 32px; height: 32px; fill: var(--navy); }
+/* копирайт в макете 14/20 в боксe 260 */
+.dtp-fcopy { max-width: 260px; font-size: 14px; line-height: 20px; }
+/* соцкнопки: круги 40×40 с заливкой navy 10% и navy-иконками (по макету);
+   Patreon и Boosty в макете чёрные — .dtp-socials__black */
+.dtp-socials { display: flex; gap: 15px; margin-left: auto; }
+.dtp-socials a {
+	width: 40px; height: 40px;
+	background: rgba(24, 51, 74, 0.1);
+	border-radius: 50%;
+	display: flex; align-items: center; justify-content: center;
+	transition: background-color 0.15s;
+}
+.dtp-socials svg { width: 20px; height: 20px; fill: var(--navy); }
+.dtp-socials__black svg { fill: #000; }
+.dtp-socials a:hover { background: rgba(24, 51, 74, 0.18); }
+
+/* ---------- контент страниц ---------- */
+
+.dtp-page { padding-top: 39px; }
+.dtp-page__title {
+	/* макет: H1 3390..3437 → интро 3467 (зазор 30) */
+	margin: 0 0 30px;
+	font-size: 40px;
+	line-height: normal;
+	font-weight: 500;
+	color: var(--navy);
+	text-align: center;
+}
+.dtp-page--left .dtp-page__title { text-align: left; }
+.dtp-entry > p { margin: 0 0 24px; }
+.dtp-entry h2 { font-size: 26px; line-height: normal; font-weight: 500; margin: 48px 0 24px; }
+.dtp-entry h3 { font-size: 24px; line-height: 1.25; font-weight: 500; margin: 40px 0 16px; }
+.dtp-entry ul { padding-left: 24px; }
+.dtp-entry code {
+	background: var(--bg-soft);
+	padding: 1px 6px;
+	font-size: 14px;
+}
+.dtp-entry pre {
+	background: var(--bg-soft);
+	padding: 16px 20px;
+	overflow: auto;
+	font-size: 14px;
+	line-height: 20px;
+}
+
+/* имена через красный квадратик (благодарности); снизу 30 (макет: 4883 → 4913) */
+/* спонсоры: ряд растянут на всю колонку, разделители — точки 6×6 (Ellipse 2-6) */
+.dtp-dots { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; font-weight: 700; margin: 0 0 30px; }
+.dtp-dots b { font-weight: 700; }
+.dtp-dots i { width: 6px; height: 6px; background: var(--red); border-radius: 50%; flex: 0 0 auto; }
+
+/* выключенная кнопка (архив по всей России) */
+.dtp-btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
+
+/* тонкая светлая линия (в макете зазоры по 40: спонсоры 3960 → 4000 → 4042) */
+.dtp-hr-light { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+
+/* ---------- главная: карта во весь экран (front-page.php) ---------- */
+
+.dtp-map {
+	height: calc(100vh - var(--header-h));
+}
+/* цепочка обёрток от контента страницы до айфрейма — все на всю высоту */
+.dtp-map__in,
+.dtp-map__in .dtp-entry,
+.dtp-map__in .wp-block-themeisle-blocks-advanced-columns,
+.dtp-map__in .innerblocks-wrap,
+.dtp-map__in .wp-block-themeisle-blocks-advanced-column {
+	height: 100%;
+}
+/* колонка Otter добавляет боковые отступы (has-default-gap) */
+.dtp-map__in .wp-block-themeisle-blocks-advanced-column {
+	margin-left: 0;
+	margin-right: 0;
+}
+/* размер задаёт шаблон, а не inline-стили из контента */
+.dtp-map iframe {
+	display: block;
+	width: 100% !important;
+	height: 100% !important;
+	border: 0;
+}
+/* со статус-баром админа viewport съедает его высоту */
+.admin-bar .dtp-map {
+	height: calc(100vh - var(--header-h) - 32px);
+}
+@media (max-width: 782px) {
+	.admin-bar .dtp-map {
+		height: calc(100vh - var(--header-h) - 46px);
+	}
+}
+
+/* ---------- блог ---------- */
+
+.dtp-blog__head {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+	/* макет: низ H1 3437 → карточки 3457 (зазор 20) */
+	margin-bottom: 20px;
+}
+.dtp-blog__title {
+	margin: 0;
+	font-size: 40px;
+	line-height: normal;
+	font-weight: 500;
+}
+/* form — якорь для поповеров строки фильтров (календарь, поиск) */
+.dtp-blog__filters { position: relative; display: flex; align-items: center; gap: 15px; margin-left: auto; padding-top: 9px; }
+/* [hidden] не работает по умолчанию для inline-flex/флекс-детей — глушим явно */
+.dtp-blog__filters [hidden] { display: none !important; }
+.dtp-select {
+	display: inline-flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	height: 30px;
+	padding: 5px 10px;
+	border-radius: 4px; /* макет: input 30px r=4 */
+	background: var(--bg-soft);
+	font-size: 14px;
+	line-height: 20px;
+	font-family: inherit;
+	color: var(--navy);
+	border: 0;
+	cursor: pointer;
+}
+.dtp-select::after {
+	content: '';
+	width: 12px; height: 6px;
+	flex: 0 0 auto;
+	background: currentColor;
+	-webkit-mask: url('../img/chevron-down.svg') no-repeat center / contain;
+	mask: url('../img/chevron-down.svg') no-repeat center / contain;
+	transition: transform 0.15s;
+}
+/* раскрытый дропдаун — стрелка вверх (в макете чипа стоит arrow.alt.up) */
+.dtp-dd.is-open .dtp-select::after { transform: rotate(180deg); }
+/* ширины чипов из макета: input 129.7×30 и 145.7×30 (271:585, 271:588) */
+.dtp-dd--topic .dtp-select { width: 130px; }
+.dtp-dd--order .dtp-select { width: 146px; }
+.dtp-dd__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* раскрывающийся список по скриншоту дропдауна из UI-kit ('date'):
+   белая панель r=8 с тенью хедера без внутренних отступов, ряды 40px
+   (текст 14/20 отступами 10/20), при наведении ряд заливается #E2F0F8;
+   выбранный — та же заливка на шаг темнее (по правке Ильи, без галочки) */
+.dtp-dd { position: relative; }
+.dtp-dd__menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	min-width: 100%;
+	z-index: 60;
+	overflow: hidden;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 5px 15px #d4dadd;
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+.dtp-dd__item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px 20px;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	color: var(--navy);
+	text-align: left;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.dtp-dd__item:hover { background: #e2f0f8; }
+/* выбранный пункт — без галочки (по правке Ильи): просто заливка темнее
+   ховера, следующий шаг плиточной палитры после #E2F0F8 */
+.dtp-dd__item.is-selected { background: #b7d7e6; font-weight: 500; }
+.dtp-dd__item.is-selected:hover { background: #b7d7e6; }
+
+/* ---- календарь (макет Group 100, 271:692: белая панель 226×187 с тенью
+   0/5/15 #D4DADD; сетка с отступа (10,31), дни — плитки 26×26 с шагом 30
+   (зазор 4), Group 102; шапка 12/20 Medium) ---- */
+.dtp-calwrap { position: relative; }
+.dtp-cal {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 60;
+	width: 226px;
+	padding: 6px 10px 10px;
+	background: #fff;
+	/* в макете панель с тем же тоном тени, что у хедера, и скруглённые углы
+	   (радиус в распаковке потерян — взяли 10px, как у кнопок) */
+	border-radius: 10px;
+	box-shadow: 0 5px 15px #d4dadd;
+}
+.dtp-cal__head {
+	display: flex;
+	align-items: center;
+	height: 20px;
+	margin-bottom: 5px;
+	color: var(--navy);
+	/* воздух между элементами шапки: без gap зазор только в «запасе» спанов
+	   год/месяц (3 и 4.5px), а стрелки ‹ › месяца стояли вплотную.
+	   5px даёт по бокам года/месяца 8–9.5px — в 2–3 раза больше прежнего
+	   (бюджет строки 206px: 173px боксов + 6×5px) */
+	column-gap: 5px;
+}
+.dtp-cal__nav {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 15px;
+	height: 15px;
+	padding: 0;
+	border: 0;
+	/* мастер кнопки (символ 100:703) — белый КРУГ (Ellipse 1, r=16 на 32×32)
+	   с лёгкой тенью (DROP_SHADOW 0/5/15 #D4DADD); на белой панели круг
+	   читается именно за счёт тени */
+	background: #fff;
+	color: inherit;
+	cursor: pointer;
+	box-shadow: 0 5px 15px #d4dadd;
+	border-radius: 50%;
+}
+.dtp-cal__nav:hover { opacity: 0.7; }
+.dtp-cal__ym { font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+/* год/месяц с запасом по ширине (по правке Ильи: 28/55 было впритык —
+   «2026» занимало все 28px, «Сентябрь» — 54 из 55) */
+.dtp-cal__year { width: 34px; text-align: center; }
+.dtp-cal__month { width: 64px; text-align: center; }
+/* иконка в углу шапки — та же маленькая иконка из макета (Group 101, 10×10 @206,11) */
+.dtp-cal__close {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 15px; height: 15px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	cursor: pointer;
+}
+.dtp-cal__close:hover { opacity: 0.7; }
+.dtp-cal__grid {
+	display: grid;
+	grid-template-columns: repeat(7, 26px);
+	gap: 4px;
+}
+/* у каждого дня подложка-плитка (в макете их 35, Group 102): обычный день —
+   #E2F0F8 с номером #B7D7E6, день с записями — #B7D7E6 с номером #4E6E87,
+   соседний месяц — #F4F8FA с номером #D1DEE4; выбранная дата — синяя */
+.dtp-cal__cell {
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: #e2f0f8;
+	color: #b7d7e6;
+	font-family: inherit;
+	font-size: 12px;
+	line-height: 26px;
+	font-weight: 500;
+	letter-spacing: 0.15px;
+	text-align: center;
+}
+.dtp-cal__cell.has-posts {
+	background: #b7d7e6;
+	color: #4e6e87;
+	cursor: pointer;
+}
+/* при наведении плитка чуть темнее, ЦИФРА ОСТАЁТСЯ ТЁМНОЙ
+   (по правке Ильи цвет шрифта при наведении не меняется);
+   плиткам без записей ховер оставляет их же цвет #E2F0F8 —
+   иначе глобальный button:hover (см. reset) сделает фон прозрачным */
+.dtp-cal__cell:hover { background: #e2f0f8; }
+.dtp-cal__cell.has-posts:hover { background: #a5c9db; }
+.dtp-cal__cell.is-selected,
+.dtp-cal__cell.is-selected:hover { background: var(--navy); color: #fff; }
+.dtp-cal__cell.is-out { background: var(--bg-soft); color: #d1dee4; }
+/* дни соседних месяцев и без записей некликабельны (span/disabled) */
+span.dtp-cal__cell { cursor: default; }
+.dtp-cal__cell:disabled { cursor: default; }
+
+/* ---- поиск по записям: НЕ поповер. По клику на лупу «Все темы»,
+   «Сначала новые» и календарь прячутся, а на их месте разворачивается
+   широкое поле (по правке Ильи). Лупа одна: это кнопка справа от поля,
+   она же закрывает поиск. Поле как инпуты проф-фильтра (40px, r=4) ---- */
+.dtp-searchpop {
+	/* flex: прогоны-пробелы вокруг поля в шаблоне не должны плодить строчные
+	   боксы и раздувать блок (высота выходила 133px вместо 50) */
+	display: flex;
+	/* базис 340 ≈ ширина спрятанных фильтров (130+15+146+15+30+15):
+	   форма прижата вправо и сжимается по контенту — без базиса поле
+	   не «широкое»; flex-grow добирает остаток строки */
+	flex: 1 1 340px;
+	min-width: 0;
+}
+/* [hidden] не работает по умолчанию для flex-элементов — глушим явно */
+.dtp-searchpop[hidden] { display: none; }
+/* спрятанные на время поиска фильтры: поле занимает их место */
+.dtp-blog__filters.is-searching .dtp-dd,
+.dtp-blog__filters.is-searching .dtp-calwrap { display: none; }
+/* форма сжата по контенту и не даёт flex-basis поля раздвинуть себя —
+   в режиме поиска растягиваем её на всё место справа от заголовка */
+.dtp-blog__filters.is-searching { flex: 1 1 auto; }
+/* в DOM лупа стоит ПОП-СПАНА (наследие поповера «слева от лупы») — в строке
+   поле слева, лупа справа */
+.dtp-blog__filters .dtp-searchpop { order: 1; }
+.dtp-blog__filters [data-toggle="dtp-search"] { order: 2; }
+.dtp-search.dtp-search--blog {
+	display: inline-flex;
+	align-items: center;
+	height: 40px;
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 0 15px;
+	border-radius: 4px;
+	background: var(--bg-soft);
+	margin: 0;
+}
+/* лупа в поле не нужна: одна лупа — кнопка рядом (см. правку Ильи);
+   два класса обязательны: generic .dtp-search::before (блок 702) идёт
+   ПОЗЖЕ в файле — при равной специфичности он бы победил */
+.dtp-search.dtp-search--blog::before { content: none; }
+/* Специфичность (0,2,2) — выше, чем у form input:read-write родительского
+   Neve (style-main-new.min.css), который иначе возвращает полю 2px рамку и
+   синюю тень при фокусе. Фокус не из макета — видно по каретке. */
+form .dtp-search--blog input[type="search"],
+form .dtp-search--blog input[type="search"]:focus {
+	flex: 1 1 auto;
+	min-width: 0;
+	border: 0;
+	outline: 0;
+	box-shadow: none;
+	background: transparent;
+	font: inherit;
+	font-size: 14px;
+	line-height: 20px;
+	color: var(--navy);
+}
+form .dtp-search--blog input[type="search"]::placeholder { color: var(--navy-soft); }
+/* календарь/лупа — голые 24×24 иконки из макета (INSTANCE 124:658, 264:1972) */
+.dtp-icbtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--navy);
+	cursor: pointer;
+}
+.dtp-icbtn svg { display: block; width: 24px; height: 24px; }
+.dtp-icbtn:hover { opacity: .7; }
+/* строка активных фильтров (появляется только при фильтрации) */
+.dtp-blog__active {
+	margin: -6px 0 16px;
+	font-size: 14px;
+	line-height: 20px;
+	color: var(--navy-soft);
+}
+.dtp-blog__active a { color: var(--navy); margin-left: 8px; }
+.dtp-blog__empty { margin-top: 40px; color: var(--navy-soft); }
+
+.dtp-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 48px 20px;
+}
+.dtp-card { display: block; }
+.dtp-card__img {
+	position: relative;
+	/* в макете карточка 272×200 (Rectangle 122-124) — высота ошибочна, по решению
+	   Ильи пропорция 16:9 под обычные фото-обложки; скругление и тень из макета */
+	aspect-ratio: 16 / 9;
+	border-radius: 20px;
+	background: var(--bg-soft);
+	box-shadow: 0 5px 30px #d4dadd;
+	overflow: hidden;
+}
+.dtp-card__img img {
+	width: 100%; height: 100%;
+	object-fit: cover;
+}
+.dtp-card__chips {
+	position: absolute;
+	left: 15px; right: 15px; bottom: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+.dtp-chip {
+	display: inline-block;
+	height: 20px;
+	padding: 3px 10px;
+	border-radius: 6px; /* макет: Frame 615-618 r=6 */
+	background: var(--chip);
+	font-size: 12px;
+	line-height: 14px;
+	font-weight: 500;
+	color: var(--navy);
+}
+/* светлая вариация для тёмных обложек (в макете Frame 619/620 — белые чипы
+   r=6 с тем же navy-текстом). Класс вешает blog.js по яркости фото */
+.dtp-chip--light { background: #fff; }
+/* текст под фото карточки в макете свёрстан с отступом 15px от краёв
+   (бокс заголовка 242 в карточке 272) */
+.dtp-card__title {
+	margin: 10px 15px 0;
+	font-size: 20px;
+	line-height: normal;
+	font-weight: 500;
+	color: var(--navy);
+}
+.dtp-card:hover .dtp-card__title { text-decoration: underline; }
+
+/* ---------- страницы: скачивание ---------- */
+
+/* макет: строки → разделитель 40 (4019→4059) */
+.dtp-dl-section { margin-bottom: 40px; }
+/* регионы — прокручиваемое окно высотой 6 строк (6×60px) */
+.dtp-dl-section--scroll {
+	max-height: 360px;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: var(--bar) transparent;
+}
+.dtp-dl-section--scroll::-webkit-scrollbar { width: 4px; }
+.dtp-dl-section--scroll::-webkit-scrollbar-thumb { background: var(--bar); border-radius: 2px; }
+.dtp-dl-section--scroll::-webkit-scrollbar-track { background: transparent; }
+.dtp-dl-head {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	margin-bottom: 8px;
+}
+/* H1 по центру, «Инструкция для API» справа */
+.dtp-dl-head .dtp-page__title { margin: 0; flex: 1 1 auto; text-align: center; }
+/* «Инструкция для API»: в макете 14 Medium / 20px */
+.dtp-dl-head .dtp-apilink { margin-left: auto; font-weight: 500; font-size: 14px; line-height: 20px; }
+.dtp-apilink:hover { text-decoration: underline; }
+
+/* строка региона/года */
+.dtp-dl-row {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	height: 60px;
+}
+.dtp-dl-row__name { font-size: 20px; line-height: normal; font-weight: 500; flex: 1 1 auto; }
+.dtp-dl-row__meta { font-size: 12px; line-height: 14px; font-weight: 500; }
+.dtp-dl-row__meta em { font-style: italic; font-weight: 400; }
+.dtp-dl-row .dtp-btn { min-height: 40px; font-size: 14px; line-height: 20px; letter-spacing: .15px; padding: 8px 16px; min-width: 194px; gap: 12px; }
+
+/* поиск по строкам */
+/* макет: интро → поиск 41, поиск → строки 43 */
+.dtp-search {
+	display: flex;
+	align-items: center;
+	height: 40px;
+	padding: 0 15px;
+	border-radius: 4px; /* макет: INSTANCE input 856×40 r=4 */
+	background: var(--bg-soft);
+	margin: 40px 0 43px;
+}
+.dtp-search input {
+	border: 0; outline: 0; background: transparent;
+	flex: 1 1 auto;
+	font: inherit;
+	font-size: 14px;
+	color: var(--navy);
+}
+.dtp-search::before {
+	content: '';
+	width: 16px; height: 16px;
+	margin-right: 10px;
+	background: var(--navy);
+	opacity: 0.4;
+	clip-path: path('M11.9 10.5l4 4-1.4 1.4-4-4a6 6 0 1 1 1.4-1.4zM7 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z');
+}
+
+/* разделитель между секциями (как в макете, 2px светлая полоса; отступы 40) */
+.dtp-divider { border: 0; height: 2px; background: var(--bg-soft); margin: 40px 0; }
+
+/* «Структура данных» */
+.dtp-acc { border-bottom: 2px solid var(--bg-soft); margin-top: 56px; }
+/* «Инструкция для API» — та же раскрывашка, но сразу под интро (не 56px отступа) */
+.dtp-acc--api { margin: 0 0 8px; }
+/* тело инструкции — та же серая подложка, что у <pre> «Структуры данных» */
+.dtp-acc__body {
+	background: var(--bg-soft);
+	padding: 16px 20px;
+	margin: 0 0 24px;
+}
+.dtp-acc__body p { margin: 0 0 16px; }
+.dtp-acc__body p:last-child { margin-bottom: 0; }
+/* инлайн-код на серой подложке сливается — перекрашиваем в белый */
+.dtp-acc__body code { background: #fff; }
+.dtp-acc summary {
+	cursor: pointer;
+	font-size: 20px;
+	line-height: normal;
+	font-weight: 500;
+	padding: 16px 0;
+	list-style: none;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.dtp-acc summary::-webkit-details-marker { display: none; }
+.dtp-acc summary::after { content: '+'; font-weight: 400; font-size: 24px; }
+.dtp-acc[open] summary::after { content: '–'; }
+.dtp-acc pre { margin: 0 0 24px; }
+
+/* центральные подзаголовки страниц (26 Medium, по макету);
+   сверху отступ даёт hr/предыдущий блок (в макете 40) */
+.dtp-h2 {
+	font-size: 26px;
+	line-height: normal;
+	font-weight: 500;
+	text-align: center;
+	margin: 0 0 32px;
+}
+/* «Аккумулированные данные по годам» в макете — 40px по центру (бокс h=47) */
+.dtp-h2--xl { font-size: 40px; margin: 0 0 120px; }
+
+/* интро-текст страниц: 20/30, абзацы без доп. интервалов (единый блок в макете) */
+.dtp-intro { font-size: 20px; line-height: 30px; margin: 0; }
+p.dtp-intro { font-size: 20px; line-height: 30px; }
+
+.dtp-dl-row__btn { display: inline-flex; align-items: center; gap: 8px; }
+.dtp-dl-row__btn svg { width: 16px; height: 16px; fill: #fff; }
+
+/* ---------- страницы: команда ---------- */
+
+/* заголовок секции даёт верхний отступ (32), снизу 40 (макет: роли 4718 → 4800) */
+.dtp-team { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px 20px; margin: 0 0 40px; }
+.dtp-person__img {
+	/* фото команды в макете: кроп 272×345 (портретный) со скруглением 20px
+	   (Group 89-92 → Rectangle 125 r=20, картинка внутри обрезается) */
+	aspect-ratio: 272 / 345;
+	border-radius: 20px;
+	background: var(--bg-soft);
+	object-fit: cover;
+	width: 100%;
+}
+.dtp-person__name { margin: 16px 0 2px; font-size: 20px; line-height: normal; font-weight: 500; }
+.dtp-person__role { font-size: 12px; line-height: normal; }
+.dtp-person--join {
+	background: var(--bg-soft);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	text-align: center;
+	padding: 24px;
+}
+.dtp-person--join { border-radius: 20px; } /* плитка = фото-карточка 272×345 r=20 (Rectangle 125) */
+.dtp-person--join .dtp-plus { font-size: 80px; font-weight: 300; line-height: 1; }
+.dtp-person--join:hover { background: #e8f0f4; }
+
+/* ---------- страницы: вакансии ---------- */
+
+/* сетка вакансий: сверху 40 от интро, снизу 20 до блока контактов
+   (макет: кнопки 4148 → панель 4168) */
+.dtp-jobs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 20px; margin: 40px 0 20px; }
+/* каждая колонка-вакансия — серая плитка #F4F8FA r=20 (по правке Ильи фон
+   переехал с панели контактов на сами «объявления»); фото — вплотную к верху */
+/* колонка: скилы разной длины, grid тянет карточки ряда в одну высоту —
+   кнопку прижимаем к низу авто-отступом футера */
+.dtp-job { display: flex; flex-direction: column; background: var(--bg-soft); border-radius: 20px; padding-bottom: 20px; overflow: hidden; }
+/* фото вакансий: кроп 272×200, вплотную к верху плитки — скругляют углы карточки */
+.dtp-job__img { aspect-ratio: 272 / 200; border-radius: 20px 20px 0 0; object-fit: cover; width: 100%; }
+/* текст карточки вакансии — с отступом 20 от краёв (по правке Ильи: в макете
+   поля ≈14/190 ≈ 20 на карточке 272); селектор с .dtp-job — специфичностью
+   выше .dtp-entry h3, который иначе обнуляет боковые margin заголовка */
+.dtp-job .dtp-job__title {
+	margin: 12px 20px 0;
+	font-size: 20px;
+	line-height: normal;
+	font-weight: 500;
+	padding-bottom: 10px;
+	/* визуальное отделение шапки карточки: линия 2px #D1DEE4 (Rectangle 112), не 1px */
+	border-bottom: 2px solid var(--bar);
+}
+.dtp-job__title a:hover { text-decoration: underline; }
+/* «Если вы:» → пункты через 4, пункты через 5 (макет: 3919→3922, 4003→4008) */
+.dtp-job p { margin: 12px 20px 4px; }
+.dtp-job ul { margin: 0; padding: 0 20px; list-style: none; }
+/* скилы — с тёмной точкой 6×6 (по правке Ильи — НЕ красная, как текст);
+   currentColor: точка всегда цвета текста пункта */
+.dtp-job li { margin-bottom: 5px; position: relative; padding-left: 15px; }
+.dtp-job li::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 9px;
+	width: 6px;
+	height: 6px;
+	background: currentColor;
+	border-radius: 50%;
+}
+/* последний пункт → кнопка (те же поля 20); авто-отступ прижимает футер к низу
+   плитки, 10px — минимум между скилами и кнопкой у самой высокой карточки ряда */
+.dtp-job__footer { margin: auto 20px 0; padding-top: 10px; }
+.dtp-job .dtp-btn { width: 100%; }
+
+/* контакты под вакансиями — без своего фона (плитки теперь на колонках,
+   по правке Ильи), просто текст после сетки */
+.dtp-joinhelp { margin: 0 0 60px; }
+.dtp-joinhelp .dtp-intro { margin: 0 0 20px; }
+.dtp-joinhelp .dtp-contact { margin-top: 0; }
+/* пара «Telegram + почта» — в одну строку и на мобильных: у последнего контакта
+   нет хвостового отступа (иначе браузер учитывает его при переносе и уводит
+   почту под Telegram), на узких экранах кегль 18 — чтобы пара помещалась */
+.dtp-joinhelp .dtp-contact:last-child { margin-right: 0; }
+
+/* ---------- страницы: поддержка ---------- */
+
+/* блок сбора на странице поддержки — в макете серый бокс 856×360 r=30
+   (Frame 636, вся контентная колонка): внутри контент 756 с инсетом
+   50 по бокам и 40 сверху — бар 756×40 r=20, подпись (16px, инсет 20)
+   через 10, карточки через 33, «крупные пожертвования» через 33
+   (80px блок: текст на y=16, кнопка 158×40 на y=18), низ вровень */
+.dtp-fundbox {
+	background: var(--bg-soft);
+	border-radius: 30px;
+	margin: 50px 0 40px;
+	padding: 40px 50px 0;
+}
+.dtp-fundbox .dtp-fund__bar { height: 40px; border-radius: 20px; margin-bottom: 10px; }
+.dtp-fundbox .dtp-fund__fill { border-radius: 20px; }
+.dtp-fundbox .dtp-fund__row { margin-top: 0; padding: 0 20px; font-size: 16px; }
+/* способы поддержки: брендированные карточки 238×105 r=24 (макет «Card Promo»):
+   логотип по центру верхней части, белая черта @20% в 20px от краёв, валюты внизу */
+.dtp-payways { display: flex; gap: 21px; margin-top: 33px; flex-wrap: wrap; }
+.dtp-payway {
+	flex: 0 0 auto;
+	width: 238px; height: 105px;
+	border-radius: 24px;
+	color: #fff;
+	padding: 13px 20px 9px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+.dtp-payway__logo { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
+.dtp-payway::after { content: ''; order: 2; align-self: stretch; height: 1px; background: #fff; opacity: 0.2; margin: 8px 0; }
+.dtp-payway small { order: 3; font-size: 16px; line-height: 16px; font-weight: 400; }
+.dtp-payway--boosty { background: linear-gradient(193deg, #ef7829 0%, #f07529 5%, #f0672b 36%, #f15e2c 67%, #f15a2c 100%); }
+.dtp-payway--tribute { background: linear-gradient(180deg, #79c9ff, #007aff); }
+.dtp-payway--patreon { background: #000; }
+/* старые монохромные карточки (если где-то остались) */
+.dtp-payway--plain { background: #fff; border: 1px solid var(--line); color: var(--navy); }
+/* брендированные карты и валюты на них — белые: правило 907 красит ВСЕ ссылки
+   контента в navy (0,2,1), поэтому возвращаем белый его же специфичностью */
+.single .dtp-entry a.dtp-payway--boosty,
+.single .dtp-entry a.dtp-payway--tribute,
+.single .dtp-entry a.dtp-payway--patreon,
+.dtp-page .dtp-entry a.dtp-payway--boosty,
+.dtp-page .dtp-entry a.dtp-payway--tribute,
+.dtp-page .dtp-entry a.dtp-payway--patreon { color: #fff; }
+/* в макете блок 80px: 16 сверху + 44 контент + 20 снизу (без него текст
+   прижимается к нижнему краю серого бокса — «поехавшая вёрстка»);
+   кнопка — светлая пилюля #d1dee4 r=20, 158×40, текст 14 Medium navy */
+.dtp-bigdonate { display: flex; align-items: center; gap: 24px; margin-top: 33px; padding: 16px 0 20px; }
+.dtp-bigdonate__text b { display: block; }
+.dtp-bigdonate .dtp-btn {
+	margin-left: auto;
+	min-height: 40px;
+	background: var(--bar);
+	color: var(--navy) !important;
+	font-size: 14px;
+	line-height: 20px;
+	border-radius: 20px;
+}
+.dtp-bigdonate .dtp-btn:hover { opacity: 0.85; color: var(--navy); }
+
+/* ---------- одиночный пост ---------- */
+
+.single .dtp-page__title { text-align: left; }
+.single .dtp-entry { max-width: 720px; }
+.dtp-postmeta { color: var(--navy-soft); font-size: 14px; margin-bottom: 24px; }
+/* обложка записи: та же карточка r=20 с тенью, что в сетке блога */
+.dtp-cover {
+	border-radius: 20px;
+	overflow: hidden;
+	box-shadow: 0 5px 30px #d4dadd;
+	margin-bottom: 32px;
+}
+.dtp-cover img { display: block; width: 100%; height: auto; }
+/* ссылки в тексте записи — подчёркнуты (иначе не видно, что кликабельны);
+   карточки/кнопки/меню (где подчёркивание не нужно) переопределены выше */
+.single .dtp-entry a,
+.dtp-page .dtp-entry a { color: var(--navy); text-decoration: underline; }
+.single .dtp-entry a:hover { text-decoration: none; }
+/* подчёркнуты — только ссылки в тексте; кнопки, карточки-ссылки и контакты
+   в макете подчёркивания не имеют (у заголовка вакансии оно на hover) */
+/* (специфичность 0,2,1 — с элементом `a`, иначе правило item-8
+   `.dtp-page .dtp-entry a` (0,2,1) пересиливает классовые селекторы) */
+.dtp-entry a.dtp-btn,
+.dtp-entry a.dtp-payway,
+.dtp-entry a.dtp-apilink,
+.dtp-entry .dtp-contact a,
+.dtp-entry a.dtp-person--join,
+.dtp-entry .dtp-job__title a { text-decoration: none; }
+
+/* ============================================================
+   Адаптив (по мобильным макетам 317_*)
+   ============================================================ */
+
+@media (max-width: 1100px) {
+	.dtp-nav { display: none; }
+	/* открытое меню — на ВЕСЬ экран (по правке Ильи): fixed-слой под строкой
+	   шапки. Шапка (sticky, z-index:100) — контекст наложения, поэтому
+	   z-index:-1 у слоя держит его НАД страницей, но ПОД лого и бургером:
+	   бургер остаётся видим и закрывает меню */
+	.dtp-nav.is-open {
+		display: block;
+		position: fixed;
+		top: 0; left: 0; right: 0; bottom: 0;
+		z-index: -1;
+		background: #fff;
+		padding: 24px 20px;
+		padding-top: calc(var(--header-h) + 16px);
+		overflow-y: auto;
+	}
+	.dtp-nav.is-open ul { flex-direction: column; align-items: flex-start; gap: 12px; }
+	.dtp-nav.is-open .dtp-nav__support {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		margin-top: 16px;
+		min-height: 40px;
+		padding: 8px 20px;
+		border-radius: 10px;
+		background: var(--navy);
+		color: #fff;
+		font-weight: 500;
+	}
+	.dtp-nav.is-open .dtp-nav__support:hover { background: var(--navy-soft); }
+	.dtp-burger {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		margin-left: auto;
+		background: none; border: 0; padding: 8px; cursor: pointer;
+	}
+	.dtp-burger span { width: 22px; height: 2px; background: var(--navy); }
+	.dtp-header__in { padding: 0 16px; }
+	.dtp-header .dtp-btn { margin-left: 0; }
+}
+
+@media (max-width: 860px) {
+	.dtp-grid, .dtp-team, .dtp-jobs { grid-template-columns: repeat(2, 1fr); }
+	.dtp-jobs { margin-bottom: 20px; }
+	.dtp-joinhelp { margin-bottom: 40px; }
+	.dtp-fcols { grid-template-columns: 1fr; gap: 32px; }
+	.dtp-fund { flex-direction: column; align-items: stretch; }
+	.dtp-fund .dtp-btn { width: 100%; }
+	.dtp-fbottom { flex-wrap: wrap; }
+	.dtp-socials { margin-left: 0; width: 100%; justify-content: flex-start; }
+	.dtp-page__title, .dtp-blog__title { font-size: 32px; }
+	/* на мобильных тексты страниц «О проекте/Поддержать/Команда» центрированы (макеты 317_*) */
+	.dtp-center-m { text-align: center; }
+	.dtp-dots { justify-content: center; }
+	/* промо-карты в колонку на всю ширину (макет 317:2168+, шаг 21px) */
+	.dtp-payways { flex-direction: column; gap: 21px; }
+	.dtp-payway { width: 100%; }
+	.dtp-bigdonate { flex-direction: column; text-align: center; gap: 16px; }
+	.dtp-bigdonate .dtp-btn { margin-left: 0; }
+	/* строка скачивания: имя, мета под ним, кнопка справа на всю высоту (макет 317:1410) */
+	.dtp-dl-row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		column-gap: 12px;
+		row-gap: 4px;
+		align-items: center;
+		height: auto;
+		min-height: 0;
+		padding: 12px 0;
+	}
+	.dtp-dl-row__name { grid-column: 1; grid-row: 1; font-size: 18px; line-height: 24px; }
+	.dtp-dl-row__meta { grid-column: 1; width: auto; }
+	.dtp-dl-row .dtp-btn { grid-column: 2; grid-row: 1 / span 3; min-width: 150px; }
+	.dtp-dl-head .dtp-page__title { text-align: left; font-size: 24px; }
+	.dtp-dl-head { gap: 12px; }
+}
+
+@media (max-width: 560px) {
+	/* команда остаётся в 2 колонки (по макету 317:1713), вакансии — в одну */
+	.dtp-grid, .dtp-jobs { grid-template-columns: 1fr; }
+	.dtp-blog__head { flex-direction: column; gap: 16px; }
+	.dtp-blog__filters { margin-left: 0; padding-top: 0; flex-wrap: wrap; }
+	/* на узких экранах попапы фильтров якорим влево, чтобы не резались краем;
+	   развёрнутое поле поиска сжимается по ширине строки, лупа остаётся справа
+	   (перенос строки выключен, иначе лупа уезжает под поле) */
+	.dtp-dd__menu { left: 0; right: auto; }
+	.dtp-cal { left: 0; right: auto; }
+	.dtp-blog__filters.is-searching { flex-wrap: nowrap; }
+	.dtp-page__title, .dtp-blog__title { font-size: 28px; }
+	/* мобильный бокс сбора (Frame 637): 400×653 r=30, инсет 20 от краёв, внутренний 20/20 */
+	.dtp-fundbox { margin: 40px 20px; padding: 20px 20px 0; }
+	/* контакты «Telegram + почта» в одну строку: кегль 18 (см. .dtp-joinhelp) */
+	.dtp-joinhelp .dtp-contact { font-size: 18px; }
+	.dtp-header .dtp-btn { display: none; } /* в мобильном меню кнопка не влезает — оставляем только пункты */
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-hidden="true">
+  <!-- календарь: скруглённый корпус, линия шапки, два пина. Мастер-вектор
+       макета (vector-network-84) бит при распаковке .fig, прежняя реконструкция
+       давала 4 пина — перерисовано начисто в той же манере штриха (2px, скругления) -->
+  <rect x="3" y="4" width="18" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M3 9.5h18" stroke="currentColor" stroke-width="2"/>
+  <path d="M8 1.5v4M16 1.5v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
