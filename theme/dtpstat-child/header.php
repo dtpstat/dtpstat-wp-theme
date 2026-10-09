@@ -17,10 +17,8 @@
 <header class="dtp-header">
 	<div class="dtp-header__in">
 		<a class="dtp-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="Карта ДТП — на главную">
-			<?php
-			// Лого собран из векторов макета (design/compose_svg.py).
-			echo file_get_contents( get_stylesheet_directory() . '/assets/img/logo.svg' ); // phpcs:ignore
-			?>
+			<?php // Лого — как на dtp-stat.ru: вектор, трассированный с их logo.png (2280×340). ?>
+			<img src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/img/logo.svg' ); ?>" width="2280" height="340" alt="">
 		</a>
 
 		<nav class="dtp-nav" aria-label="<?php esc_attr_e( 'Главное меню', 'dtpstat-child' ); ?>">

@@ -6,7 +6,7 @@
 
 add_action( 'wp_enqueue_scripts', function () {
 	$dir = get_stylesheet_directory_uri();
-	$ver = '0.2.34';
+	$ver = '0.2.37';
 
 	// Бургер-меню — на всех страницах (на главной футера нет).
 	wp_enqueue_script( 'dtpstat-main', $dir . '/assets/js/main.js', [], $ver, true );
@@ -185,6 +185,31 @@ add_action( 'pre_get_posts', function ( \WP_Query $q ) {
 /** Результаты поиска по записям показываем сеткой блога (home.php). */
 add_filter( 'template_include', function ( $tpl ) {
 	return ( is_search() && locate_template( 'home.php' ) ) ? locate_template( 'home.php' ) : $tpl;
+} );
+
+/**
+ * Индивидуальные ДТП: /dtp/<EM_NUMBER>/ — карточка аварии из dtpstat-pages
+ * (details/?id=…) в айфрейме, как карта на главной. Правила ЧПУ не нужны:
+ * перехватываем любой такой запрос до раздачи 404.
+ */
+add_action( 'template_redirect', function () {
+	$path = (string) parse_url( $_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH );
+	if ( ! preg_match( '#^/dtp/(\d+)/?$#', $path, $m ) ) {
+		return;
+	}
+	status_header( 200 );
+	nocache_headers();
+	get_header();
+	?>
+	<div class="dtp-map">
+		<?php // Тот же details, что открывается по «Подробнее о ДТП» из попапа карты. ?>
+		<iframe title="Подробности ДТП" src="<?php echo esc_url( 'https://dtpstat-pages.pages.dev/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+	</div>
+	<?php
+	// footer.php не подключаем — у карточки внутри айфрейма свой футер
+	// (статичная копия footer.php), но wp_footer() нужен для скриптов.
+	wp_footer();
+	exit;
 } );
 
 /** Обрезка цитаты для карточки. */

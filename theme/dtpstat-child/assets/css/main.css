@@ -93,8 +93,8 @@ img { max-width: 100%; height: auto; display: block; }
 	gap: 20px;
 }
 .dtp-logo { flex: 0 0 auto; display: flex; }
-/* официальный лого (dtpstat-pages) — 170×24; в макете он лежит в рамке 176×28 */
-.dtp-logo svg { width: 170px; height: 24px; }
+/* лого как на dtp-stat.ru — вектор 2280×340, ширина 170 (высота ~25 из пропорции) */
+.dtp-logo img { width: 170px; height: auto; }
 
 .dtp-nav { margin-left: auto; }
 .dtp-nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
@@ -186,7 +186,7 @@ img { max-width: 100%; height: auto; display: block; }
 .dtp-fcol p { margin: 0; }
 .dtp-fcol--about p { line-height: 22px; }
 /* лого → текст 20 (в макете 5237+24 → 5285 при верхнем выравнивании колонок) */
-.dtp-fcol .dtp-logo svg { width: 170px; height: 24px; margin-bottom: 20px; }
+.dtp-fcol .dtp-logo img { width: 170px; height: auto; margin-bottom: 20px; }
 /* строки контактов и карты сайта идут с шагом 36px (макет: 5277 → 5313) */
 .dtp-fcol .dtp-contact { margin-bottom: 12px; }
 .dtp-fmenu { list-style: none; margin: 0; padding: 0; }

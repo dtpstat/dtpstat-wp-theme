@@ -27,7 +27,7 @@
 		<div class="dtp-fcols">
 			<div class="dtp-fcol dtp-fcol--about">
 				<a class="dtp-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-					<?php echo file_get_contents( get_stylesheet_directory() . '/assets/img/logo.svg' ); // phpcs:ignore ?>
+					<img src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/img/logo.svg' ); ?>" width="2280" height="340" alt="Карта ДТП">
 				</a>
 				<p>Проект посвящен проблеме дорожно-транспортных происшествий в России. Цель проекта — повышение безопасности дорожного движения и снижение смертности в ДТП.</p>
 			</div>
