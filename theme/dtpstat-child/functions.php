@@ -188,6 +188,43 @@ add_filter( 'template_include', function ( $tpl ) {
 } );
 
 /**
+ * Значение для настройки темы: переменная окружения (php-fpm environment)
+ * или строка KEY=VALUE в .env — сначала рядом с WP (вне docroot), затем
+ * в корне WP. Строки-комментарии начинаются с #, значения в кавычках
+ * раздеваются. Так адрес фронтенда не хардкодится в коде темы.
+ */
+function dtp_env( $key, $default = '' ) {
+	$from_env = getenv( $key );
+	if ( false !== $from_env && '' !== $from_env ) {
+		return $from_env;
+	}
+	static $vars = null;
+	if ( null === $vars ) {
+		$vars = [];
+		foreach ( [ dirname( ABSPATH ) . '/.env', ABSPATH . '/.env' ] as $file ) {
+			if ( ! is_readable( $file ) ) {
+				continue;
+			}
+			foreach ( file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
+				$line = trim( $line );
+				if ( '' === $line || str_starts_with( $line, '#' ) || ! str_contains( $line, '=' ) ) {
+					continue;
+				}
+				[ $k, $v ] = explode( '=', $line, 2 );
+				$vars[ trim( $k ) ] = trim( $v, " \t\"'" );
+			}
+			break;
+		}
+	}
+	return $vars[ $key ] ?? $default;
+}
+
+/** Адрес фронтенда карты/карточек ДТП для айфреймов (без слэша на конце). */
+function dtp_pages_url() {
+	return untrailingslashit( dtp_env( 'DTP_PAGES_URL', 'https://dtpstat-pages.pages.dev' ) );
+}
+
+/**
  * Индивидуальные ДТП: /dtp/<EM_NUMBER>/ — карточка аварии из dtpstat-pages
  * (details/?id=…) в айфрейме, как карта на главной. Правила ЧПУ не нужны:
  * перехватываем любой такой запрос до раздачи 404.
@@ -203,7 +240,7 @@ add_action( 'template_redirect', function () {
 	?>
 	<div class="dtp-map">
 		<?php // Тот же details, что открывается по «Подробнее о ДТП» из попапа карты. ?>
-		<iframe title="Подробности ДТП" src="<?php echo esc_url( 'https://dtpstat-pages.pages.dev/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+		<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
 	</div>
 	<?php
 	// footer.php не подключаем — у карточки внутри айфрейма свой футер
