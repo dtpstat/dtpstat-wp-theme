@@ -29,6 +29,10 @@ services:
       WORDPRESS_DB_USER: wp
       WORDPRESS_DB_PASSWORD: wplocal
       WORDPRESS_DB_NAME: wordpress
+      # Адрес фронтенда карты для айфреймов /dtp/<id>/ (dtp_pages_url());
+      # пусто/не задано — дефолт темы. Айфрейм карты на главной живёт в
+      # контенте страницы — правится wp search-replace, не здесь.
+      DTP_FRONTEND_URL: ${DTP_FRONTEND_URL:-}
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_ENVIRONMENT_TYPE', 'local');
         if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
