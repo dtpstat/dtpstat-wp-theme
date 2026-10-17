@@ -2,6 +2,7 @@
 # Накатка пакета на чистый WordPress.
 #
 #   bin/install.sh                                  — свой стенд compose (порт ${WP_PORT:-8086})
+#   bin/install.sh --reset                          — то же, но сначала снос данных стенда
 #   bin/install.sh --external --url https://site   — на уже доступный WP (нужен wp-cli на хосте,
 #                                                     или своя команда через --wp "wp --path=...")
 #
@@ -15,6 +16,7 @@ cd "$(dirname "$0")/.."
 URL=http://localhost:8086
 MODE=stand
 FORCE=""
+RESET=""
 
 ADMIN_USER=ilya
 ADMIN_PASS=${ADMIN_PASSWORD:-wplocal}
@@ -28,6 +30,7 @@ while [[ $# -gt 0 ]]; do
     --admin-pass) ADMIN_PASS=$2; shift 2;;
     --wp) WP_CMD=$2; shift 2;;
     --force) FORCE=1; shift;;
+    --reset) RESET=1; shift;;
     *) echo "неизвестный аргумент: $1" >&2; exit 1;;
   esac
 done
@@ -77,6 +80,7 @@ if [[ $MODE == stand ]]; then
   echo ">> стенд compose (${WP_PORT:-8086})"
   # без --wait: сервис wpcli одноразовый и выходит сразу — --wait счёл бы это провалом;
   # готовность db каждый wp-вызов гарантирует depends_on (service_healthy)
+  [[ $RESET == 1 ]] && docker compose down -v
   docker compose up -d
 fi
 
@@ -103,7 +107,7 @@ fi
 EXISTING=$(wp post list --post_type=page,post,dtp_person,dtp_sponsor --format=count 2>/dev/null || echo 0)
 if [[ $EXISTING != 0 && -z $FORCE ]]; then
   echo "ОШИБКА: на цели уже есть контент ($EXISTING записей). Повторная накатка наделает дубликатов." >&2
-  echo "  стенд пакета:        docker compose down -v && bin/install.sh" >&2
+  echo "  стенд пакета:        bin/install.sh --reset" >&2
   echo "  осознанный повтор:   bin/install.sh --force" >&2
   exit 1
 fi

@@ -2,11 +2,12 @@
 
 Пакет ставит WP-сайт с темой `dtpstat-child`; сама карта ДТП — отдельный
 статический фронтенд, который WP встраивает айфреймами. Этот документ —
-как поднять всё вместе на чистой машине.
+как поднять всё вместе на чистой машине. Управление стендом — скрипты из
+`bin/` этого репозитория.
 
 | Часть | Где | Что это |
 |---|---|---|
-| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на чистый WP; стенд docker на `:8086` |
+| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на чистый WP; стенд на `:8086` |
 | Фронтенд карты | [dtpstat-pages](https://github.com/dtpstat/website-frontend-mask) | статика (vanilla TS → `dist/`) + сервер разработки с прокси `/api` |
 | Бэкенд API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | здесь не поднимается: фронтенду нужен адрес работающего экземпляра (`API_ORIGIN`) |
 
@@ -17,7 +18,6 @@ WP-страницы**, правится `wp search-replace`), карточки �
 
 ## Требования
 
-- Docker с compose v2;
 - Node ≥ 20.6 (сборка и сервер разработки используют `node --env-file`);
 - python3 (`bin/install.sh` читает `content/settings.json`).
 
@@ -25,13 +25,13 @@ WP-страницы**, правится `wp search-replace`), карточки �
 
 ```bash
 git clone --recurse-submodules git@github.com:dtpstat/dtpstat-wp-theme.git
-git clone git@github.com:dtpstat/website-frontend-mask.git dtpstat-pages
+git clone git@github.com:dtpstat/website-frontend-mask.git
 ```
 
-## 2. Фронтенд (`dtpstat-pages`)
+## 2. Фронтенд (`website-frontend-mask`)
 
 ```bash
-cd dtpstat-pages
+cd website-frontend-mask
 cp .env.example .env     # вписать YANDEX_MAPS_KEY, MAPBOX_ACCESS_TOKEN и API_ORIGIN
 npm install
 npm run build            # tsc + копирование статики → dist/; из .env генерится dist/maps-config.js
@@ -51,7 +51,7 @@ PORT=8180 npm run serve  # любой свободный порт (дефолт 
 
 ```bash
 cd dtpstat-wp-theme
-bin/install.sh   # docker compose (WP 6.9.4 + MariaDB 11.4) на :8086 и накатка темы+контента
+bin/install.sh   # поднимет стенд (WP 6.9.4 + MariaDB 11.4) на :8086 и накатит тему и контент
 bin/verify.sh    # сверка результата с эталоном content/settings.json
 ```
 
@@ -64,15 +64,15 @@ bin/verify.sh    # сверка результата с эталоном content
 
 ```bash
 cd dtpstat-wp-theme
-# карточки /dtp/<id>/: адрес фронтенда для темы (dtp_pages_url())
-DTP_FRONTEND_URL=http://localhost:8180 docker compose up -d
-# айфрейм карты на главной: он в контенте страницы, правится через БД
-docker compose run --rm wpcli wp search-replace \
-  'https://dtpstat-pages.pages.dev' 'http://localhost:8180' --all-tables
+# айфреймы темы (карточки /dtp/<id>/):
+bin/frontend-url.sh http://localhost:8180
+# айфрейм карты на главной — он в контенте WP-страницы, правится через wp-cli:
+bin/wp.sh search-replace 'https://dtpstat-pages.pages.dev' 'http://localhost:8180' --all-tables
 ```
 
 (этими же двумя настройками указывается любой другой адрес фронтенда,
-например https-адрес публичного стенда)
+например https-адрес публичного стенда; вернуть дефолт —
+`bin/frontend-url.sh --default`)
 
 ## Проверка системы целиком
 
@@ -89,17 +89,17 @@ curl -so /dev/null -w '%{http_code}\n' http://localhost:8180/api/dtp/filter_fiel
 
 ## Грабли
 
-- **Повторный `bin/install.sh`** на непустую цель падает (защита от дублей контента):
-  сначала `docker compose down -v` (снесёт volume базы, setup зальёт всё заново).
-- **Первый старт** тянет образы `wordpress:6.9.4-apache`, `wordpress:cli-php8.3`,
-  `mariadb:11.4` и копирует ~89 МБ uploads — закладывайте несколько минут.
+- **Повторный `bin/install.sh`** на непустую цель падает (защита от дублей
+  контента): сначала `bin/install.sh --reset` — снесёт данные стенда и
+  накатит всё заново.
+- **Первый старт** занимает несколько минут: скачиваются компоненты стенда
+  и копируется ~89 МБ медиа.
 - **Ключи карт обязательны**: сборка с пустым `.env` даст `dist/maps-config.js`
   без ключей (карта не откроется). Пересоздать только конфиг без пересборки —
   `npm run config`.
 - **Mixed content**: если WP открыт по https (туннель), айфрейм на
   `http://localhost:…` браузер заблокирует. Тогда фронтенду нужен https
-  (`DTP_CERT`/`DTP_KEY` в serve) и `DTP_FRONTEND_URL`/`search-replace` с его
-  https-адресом.
+  (`DTP_CERT`/`DTP_KEY` в serve) и оба адреса из шага 4 — с его https-адресом.
 - **Порт стенда WP** меняется так: `WP_PORT=9090 bin/install.sh` — URL стенда при
   этом переписывается в контенте сам (install делает search-replace на свой `$URL`).
 
