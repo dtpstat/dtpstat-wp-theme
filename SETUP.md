@@ -1,0 +1,109 @@
+# Подъём системы с нуля: WordPress + тема + фронтенд
+
+Пакет ставит WP-сайт с темой `dtpstat-child`; сама карта ДТП — отдельный
+статический фронтенд, который WP встраивает айфреймами. Этот документ —
+как поднять всё вместе на чистой машине.
+
+| Часть | Где | Что это |
+|---|---|---|
+| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на чистый WP; стенд docker на `:8086` |
+| Фронтенд карты | [dtpstat-pages](https://github.com/dtpstat/website-frontend-mask) | статика (vanilla TS → `dist/`) + сервер разработки с прокси `/api` |
+| Бэкенд API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | здесь не поднимается: фронтенду нужен адрес работающего экземпляра (`API_ORIGIN`) |
+
+Связка: карта на главной WP — айфрейм фронтенда (URL зашит в **контент
+WP-страницы**, правится `wp search-replace`), карточки отдельных ДТП
+`/dtp/<EM_NUMBER>/` — айфрейм `/details/?id=…` (URL тема берёт из
+переменной `DTP_FRONTEND_URL`).
+
+## Требования
+
+- Docker с compose v2;
+- Node ≥ 20.6 (сборка и сервер разработки используют `node --env-file`);
+- python3 (`bin/install.sh` читает `content/settings.json`).
+
+## 1. Забрать код
+
+```bash
+git clone --recurse-submodules git@github.com:dtpstat/dtpstat-wp-theme.git
+git clone git@github.com:dtpstat/website-frontend-mask.git dtpstat-pages
+```
+
+## 2. Фронтенд (`dtpstat-pages`)
+
+```bash
+cd dtpstat-pages
+cp .env.example .env     # вписать YANDEX_MAPS_KEY, MAPBOX_ACCESS_TOKEN и API_ORIGIN
+npm install
+npm run build            # tsc + копирование статики → dist/; из .env генерится dist/maps-config.js
+PORT=8180 npm run serve  # любой свободный порт (дефолт 8080); раздаёт dist/ и проксирует /api
+```
+
+Проверка: `curl http://localhost:8180/api/dtp/filter_fields` → 200 — прокси
+до бэкенда жив.
+
+- `API_ORIGIN` — адрес работающего экземпляра `dtpstat-map`; для прокси
+  serve он **обязателен**: с пустым значением `/api` будет отвечать 502
+  (same-origin `/api` без прокси — только продовый вариант за nginx).
+- serve умеет https (`DTP_CERT`/`DTP_KEY`) — нужно, только если встраивать
+  фронтенд айфреймом в https-сайт (см. «Грабли»).
+
+## 3. WordPress + тема (этот репозиторий)
+
+```bash
+cd dtpstat-wp-theme
+bin/install.sh   # docker compose (WP 6.9.4 + MariaDB 11.4) на :8086 и накатка темы+контента
+bin/verify.sh    # сверка результата с эталоном content/settings.json
+```
+
+Сайт: http://localhost:8086, админ `ilya` / `wplocal` (или `$ADMIN_PASSWORD`).
+Сразу после установки WP показывает **задеплоенный** фронтенд
+`https://dtpstat-pages.pages.dev` — система уже работает целиком, локальный
+фронтенд подключается шагом 4.
+
+## 4. Переключить WP на локальный фронтенд
+
+```bash
+cd dtpstat-wp-theme
+# карточки /dtp/<id>/: адрес фронтенда для темы (dtp_pages_url())
+DTP_FRONTEND_URL=http://localhost:8180 docker compose up -d
+# айфрейм карты на главной: он в контенте страницы, правится через БД
+docker compose run --rm wpcli wp search-replace \
+  'https://dtpstat-pages.pages.dev' 'http://localhost:8180' --all-tables
+```
+
+(этими же двумя настройками указывается любой другой адрес фронтенда,
+например https-адрес публичного стенда)
+
+## Проверка системы целиком
+
+```bash
+# WP отдаёт главную с айфреймом фронтенда:
+curl -s http://localhost:8086/ | grep -c 'localhost:8180'          # ≥ 1
+# карточка ДТП строит айфрейм деталей:
+curl -s http://localhost:8086/dtp/1/ | grep -o 'details/?id=1'     # → details/?id=1
+# фронтенд жив и проксирует API:
+curl -so /dev/null -w '%{http_code}\n' http://localhost:8180/                      # 200
+curl -so /dev/null -w '%{http_code}\n' 'http://localhost:8180/details/?id=1'       # 200
+curl -so /dev/null -w '%{http_code}\n' http://localhost:8180/api/dtp/filter_fields # 200
+```
+
+## Грабли
+
+- **Повторный `bin/install.sh`** на непустую цель падает (защита от дублей контента):
+  сначала `docker compose down -v` (снесёт volume базы, setup зальёт всё заново).
+- **Первый старт** тянет образы `wordpress:6.9.4-apache`, `wordpress:cli-php8.3`,
+  `mariadb:11.4` и копирует ~89 МБ uploads — закладывайте несколько минут.
+- **Ключи карт обязательны**: сборка с пустым `.env` даст `dist/maps-config.js`
+  без ключей (карта не откроется). Пересоздать только конфиг без пересборки —
+  `npm run config`.
+- **Mixed content**: если WP открыт по https (туннель), айфрейм на
+  `http://localhost:…` браузер заблокирует. Тогда фронтенду нужен https
+  (`DTP_CERT`/`DTP_KEY` в serve) и `DTP_FRONTEND_URL`/`search-replace` с его
+  https-адресом.
+- **Порт стенда WP** меняется так: `WP_PORT=9090 bin/install.sh` — URL стенда при
+  этом переписывается в контенте сам (install делает search-replace на свой `$URL`).
+
+## Что осознанно не поднимается
+
+**Бэкенд** (`dtpstat-map`, Express + PostGIS): фронтенд работает с готовым
+экземпляром через `API_ORIGIN`; своя инсталляция описана в его `DEPLOY.md`.
