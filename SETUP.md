@@ -1,13 +1,14 @@
-# Подъём системы с нуля: WordPress + тема + фронтенд
+# Тема dtpstat-child на готовом WordPress + фронтенд карты
 
-Пакет ставит WP-сайт с темой `dtpstat-child`; сама карта ДТП — отдельный
-статический фронтенд, который WP встраивает айфреймами. Этот документ —
-как поднять всё вместе на чистой машине. Управление стендом — скрипты из
-`bin/` этого репозитория.
+Предпосылка: WordPress уже установлен (ядро, `wp-config.php` с базой).
+Пакет накатывает на него тему `dtpstat-child` с контентом. Сама карта
+ДТП — отдельный статический фронтенд, который WP встраивает айфреймами:
+он собирается отдельно и подключается адресом (шаг 4). Управление —
+скрипты из `bin/` этого репозитория.
 
 | Часть | Где | Что это |
 |---|---|---|
-| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на чистый WP; стенд на `:8086` |
+| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на готовый WP |
 | Фронтенд карты | [dtpstat-pages](https://github.com/dtpstat/website-frontend-mask) | статика (vanilla TS → `dist/`) + сервер разработки с прокси `/api` |
 | Бэкенд API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | здесь не поднимается: фронтенду нужен адрес работающего экземпляра (`API_ORIGIN`) |
 
@@ -18,8 +19,9 @@ WP-страницы**, правится `wp search-replace`), карточки �
 
 ## Требования
 
-- Node ≥ 20.6 (сборка и сервер разработки используют `node --env-file`);
-- python3 (`bin/install.sh` читает `content/settings.json`).
+- установленный WordPress; wp-cli на его хосте (или своя команда в `--wp`);
+- rsync и python3 (нужны `bin/install.sh`);
+- Node ≥ 20.6 для сборки фронтенда (сборка и serve используют `node --env-file`).
 
 ## 1. Забрать код
 
@@ -28,7 +30,40 @@ git clone --recurse-submodules git@github.com:dtpstat/dtpstat-wp-theme.git
 git clone git@github.com:dtpstat/website-frontend-mask.git
 ```
 
-## 2. Фронтенд (`website-frontend-mask`)
+Если WP на другой машине — доставьте пакет на её хост (скрипты запускаются
+**на самом хосте**: wp-cli-вызовы с eval через ssh теряют кавычки):
+
+```bash
+rsync -a dtpstat-wp-theme/ host:~/dtpstat-wp-theme/
+```
+
+## 2. Накатить тему на WordPress
+
+```bash
+cd dtpstat-wp-theme
+bin/install.sh --external --url https://example.org \
+  --wp "wp --path=/path/to/site" \
+  --admin-pass 'пароль'   # нужен, только если ядро ещё не установлено (install сам сделает core install)
+
+bin/verify.sh https://example.org --external "wp --path=/path/to/site"
+```
+
+`install` накатывает всё остальное: тему (neve с пином версии из
+`content/settings.json` + `dtpstat-child`), плагины, медиа (~89 МБ,
+с ручными кропами), контент (страницы/посты/CPT), настройки и меню.
+Сразу после этого WP показывает **задеплоенный** фронтенд
+`https://dtpstat-pages.pages.dev` — система работает целиком, свой
+фронтенд подключается шагом 4.
+
+- непустая цель (повторная накатка) — см. «Грабли»;
+- если PHP работает под другим пользователем, отдайте ему `wp-content`
+  (группа + запись, setgid на каталогах), иначе медиа не зальётся.
+
+Если готового WordPress нет, `bin/install.sh` без `--external` поднимет
+собственный стенд на `:8086` (админ `ilya`/`wplocal`; сброс — `--reset`,
+порт — `WP_PORT=…`; первый старт занимает несколько минут).
+
+## 3. Фронтенд (`website-frontend-mask`)
 
 ```bash
 cd website-frontend-mask
@@ -79,90 +114,52 @@ server {
 и HTML — в README фронтенда, раздел «Самостоятельный хостинг». Проверка
 всё та же: `curl http://frontend.example.org/api/dtp/filter_fields` → 200.
 
-## 3. WordPress + тема (этот репозиторий)
+## 4. Подключить WP к своему фронтенду
+
+Две настройки: айфреймы карточек `/dtp/<id>/` (берёт тема) и айфрейм
+карты на главной (он в контенте WP-страницы):
 
 ```bash
-cd dtpstat-wp-theme
-bin/install.sh   # поднимет стенд (WP 6.9.4 + MariaDB 11.4) на :8086 и накатит тему и контент
-bin/verify.sh    # сверка результата с эталоном content/settings.json
-```
-
-Сайт: http://localhost:8086, админ `ilya` / `wplocal` (или `$ADMIN_PASSWORD`).
-Сразу после установки WP показывает **задеплоенный** фронтенд
-`https://dtpstat-pages.pages.dev` — система уже работает целиком, локальный
-фронтенд подключается шагом 4.
-
-## 4. Переключить WP на локальный фронтенд
-
-```bash
-cd dtpstat-wp-theme
-# айфреймы темы (карточки /dtp/<id>/):
-bin/frontend-url.sh http://localhost:8180
-# айфрейм карты на главной — он в контенте WP-страницы, правится через wp-cli:
-bin/wp.sh search-replace 'https://dtpstat-pages.pages.dev' 'http://localhost:8180' --all-tables
-```
-
-(этими же двумя настройками указывается любой другой адрес фронтенда,
-например https-адрес публичного стенда; вернуть дефолт —
-`bin/frontend-url.sh --default`)
-
-## Установка на существующий WordPress (`--external`)
-
-Вместо стенда пакет накатывается на уже поднятый WP (свой хостинг, vhost,
-база). Скрипты запускаются **на самом хосте**: wp-cli-вызовы с eval через
-ssh теряют кавычки. Понадобятся wp-cli и rsync.
-
-```bash
-bin/install.sh --external --url https://example.org \
-  --wp "wp --path=/path/to/site"
-bin/verify.sh https://example.org --external "wp --path=/path/to/site"
-```
-
-- пустой WP (ядро не установлено) — не помеха, install сам сделает
-  core install; непустая цель — см. «Грабли» про повторную накатку;
-- если PHP работает под другим пользователем, отдайте ему `wp-content`
-  (группа + запись, setgid на каталогах), иначе медиа не зальётся.
-
-Адрес фронтенда (шаг 4) ставится теми же двумя настройками, но напрямую —
-скрипты `bin/frontend-url.sh` и `bin/wp.sh` работают только со стендом:
-
-```bash
-# айфреймы темы (карточки /dtp/<id>/): переменная DTP_FRONTEND_URL
-# в .env в каталоге WP или уровнем выше — тема читает её на каждом запросе
+# айфреймы темы: переменная DTP_FRONTEND_URL в .env в каталоге WP
+# или уровнем выше — тема читает её на каждом запросе
 printf 'DTP_FRONTEND_URL=%s\n' 'https://frontend.example.org' >> /path/to/.env
-# айфрейм карты на главной — он в контенте WP-страницы:
+# айфрейм карты на главной — правится wp-cli по всем таблицам:
 wp --path=/path/to/site search-replace 'https://dtpstat-pages.pages.dev' \
   'https://frontend.example.org' --all-tables
 ```
 
+(этими же двумя настройками указывается любой другой адрес фронтенда;
+для стенда пакета из шага 2 вместо этого есть скрипты:
+`bin/frontend-url.sh <URL>` — вернуть дефолт `--default`, и
+`bin/wp.sh search-replace …`)
+
 ## Проверка системы целиком
 
 ```bash
+SITE=https://example.org; FRONT=https://frontend.example.org
 # WP отдаёт главную с айфреймом фронтенда:
-curl -s http://localhost:8086/ | grep -c 'localhost:8180'          # ≥ 1
+curl -s "$SITE/" | grep -cF "$FRONT"                                 # ≥ 1
 # карточка ДТП строит айфрейм деталей:
-curl -s http://localhost:8086/dtp/1/ | grep -o 'details/?id=1'     # → details/?id=1
+curl -s "$SITE/dtp/1/" | grep -o 'details/?id=1'                     # → details/?id=1
 # фронтенд жив и проксирует API:
-curl -so /dev/null -w '%{http_code}\n' http://localhost:8180/                      # 200
-curl -so /dev/null -w '%{http_code}\n' 'http://localhost:8180/details/?id=1'       # 200
-curl -so /dev/null -w '%{http_code}\n' http://localhost:8180/api/dtp/filter_fields # 200
+curl -so /dev/null -w '%{http_code}\n' "$FRONT/"                     # 200
+curl -so /dev/null -w '%{http_code}\n' "$FRONT/details/?id=1"        # 200
+curl -so /dev/null -w '%{http_code}\n' "$FRONT/api/dtp/filter_fields" # 200
 ```
 
 ## Грабли
 
-- **Повторный `bin/install.sh`** на непустую цель падает (защита от дублей
-  контента): сначала `bin/install.sh --reset` — снесёт данные стенда и
-  накатит всё заново.
-- **Первый старт** занимает несколько минут: скачиваются компоненты стенда
-  и копируется ~89 МБ медиа.
+- **Повторная накатка** на непустую цель падает (защита от дублей
+  контента): либо чистая цель (на сервере — дамп, дроп таблиц по префиксу
+  и пустой каталог WP), либо осознанный `--force`. Для стенда пакета —
+  `bin/install.sh --reset`.
 - **Ключи карт обязательны**: сборка с пустым `.env` даст `dist/maps-config.js`
   без ключей (карта не откроется). Пересоздать только конфиг без пересборки —
   `npm run config`.
-- **Mixed content**: если WP открыт по https (туннель), айфрейм на
+- **Mixed content**: если WP открыт по https, айфрейм на
   `http://localhost:…` браузер заблокирует. Тогда фронтенду нужен https
-  (`DTP_CERT`/`DTP_KEY` в serve) и оба адреса из шага 4 — с его https-адресом.
-- **Порт стенда WP** меняется так: `WP_PORT=9090 bin/install.sh` — URL стенда при
-  этом переписывается в контенте сам (install делает search-replace на свой `$URL`).
+  (`DTP_CERT`/`DTP_KEY` в serve или nginx с сертификатом) и оба адреса
+  из шага 4 — с его https-адресом.
 
 ## Что осознанно не поднимается
 
