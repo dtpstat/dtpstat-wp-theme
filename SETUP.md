@@ -43,9 +43,41 @@ PORT=8180 npm run serve  # любой свободный порт (дефолт 
 
 - `API_ORIGIN` — адрес работающего экземпляра `dtpstat-map`; для прокси
   serve он **обязателен**: с пустым значением `/api` будет отвечать 502
-  (same-origin `/api` без прокси — только продовый вариант за nginx).
+  (same-origin `/api` — это вариант с nginx ниже).
 - serve умеет https (`DTP_CERT`/`DTP_KEY`) — нужно, только если встраивать
   фронтенд айфреймом в https-сайт (см. «Грабли»).
+
+### Вариант без serve: статика + nginx
+
+`npm run serve` нужен только для разработки. Собранный `dist/` —
+самодостаточная статика (серверного кода нет, клиентской маршрутизации
+тоже — deep-links передаются query-параметрами, SPA-fallback не нужен),
+её отдаёт любой статический сервер. Заодно nginx даёт same-origin `/api`:
+
+```nginx
+server {
+    listen 80;
+    server_name frontend.example.org;
+
+    root /path/to/website-frontend-mask/dist;
+    index index.html;
+
+    # /api того же origin — вместо прокси serve.
+    # Тогда при сборке API_ORIGIN в .env оставьте пустым: пустое
+    # значение вшивается в статику, и страница ходит на свой /api
+    location /api/ {
+        proxy_pass https://api.example.org/api/;
+        proxy_set_header Host api.example.org;
+        proxy_ssl_server_name on;
+    }
+
+    location / { try_files $uri $uri/ =404; }
+}
+```
+
+Кэш-правила для версионированных ассетов (`?v=`), свежего `maps-config.js`
+и HTML — в README фронтенда, раздел «Самостоятельный хостинг». Проверка
+всё та же: `curl http://frontend.example.org/api/dtp/filter_fields` → 200.
 
 ## 3. WordPress + тема (этот репозиторий)
 
