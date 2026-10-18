@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Проверка результата накатки против эталона из content/settings.json.
 #
-#   bin/verify.sh [URL] [--external --wp "..."]   (URL по умолчанию http://localhost:8086)
+#   bin/verify.sh [URL] [--external "wp --path=..."]  (URL по умолчанию http://localhost:8086)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

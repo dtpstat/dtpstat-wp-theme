@@ -74,6 +74,35 @@ bin/wp.sh search-replace 'https://dtpstat-pages.pages.dev' 'http://localhost:818
 например https-адрес публичного стенда; вернуть дефолт —
 `bin/frontend-url.sh --default`)
 
+## Установка на существующий WordPress (`--external`)
+
+Вместо стенда пакет накатывается на уже поднятый WP (свой хостинг, vhost,
+база). Скрипты запускаются **на самом хосте**: wp-cli-вызовы с eval через
+ssh теряют кавычки. Понадобятся wp-cli и rsync.
+
+```bash
+bin/install.sh --external --url https://example.org \
+  --wp "wp --path=/path/to/site"
+bin/verify.sh https://example.org --external "wp --path=/path/to/site"
+```
+
+- пустой WP (ядро не установлено) — не помеха, install сам сделает
+  core install; непустая цель — см. «Грабли» про повторную накатку;
+- если PHP работает под другим пользователем, отдайте ему `wp-content`
+  (группа + запись, setgid на каталогах), иначе медиа не зальётся.
+
+Адрес фронтенда (шаг 4) ставится теми же двумя настройками, но напрямую —
+скрипты `bin/frontend-url.sh` и `bin/wp.sh` работают только со стендом:
+
+```bash
+# айфреймы темы (карточки /dtp/<id>/): переменная DTP_FRONTEND_URL
+# в .env в каталоге WP или уровнем выше — тема читает её на каждом запросе
+printf 'DTP_FRONTEND_URL=%s\n' 'https://frontend.example.org' >> /path/to/.env
+# айфрейм карты на главной — он в контенте WP-страницы:
+wp --path=/path/to/site search-replace 'https://dtpstat-pages.pages.dev' \
+  'https://frontend.example.org' --all-tables
+```
+
 ## Проверка системы целиком
 
 ```bash
