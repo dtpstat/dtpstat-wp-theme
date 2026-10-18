@@ -91,6 +91,10 @@ if ! wp core is-installed 2>/dev/null; then
     --admin_user="$ADMIN_USER" --admin_password="$ADMIN_PASS" \
     --admin_email="$ADMIN_EMAIL" --skip-email
   wp language core install ru_RU --activate >/dev/null 2>&1 || echo "   ! ru_RU не поставился (не критично)"
+  # wp_guess_url на некоторых хостах выводит siteurl/home не из --url
+  # (например, приписывает имя каталога установки) — фиксируем явно
+  wp option update siteurl "$URL" >/dev/null
+  wp option update home "$URL" >/dev/null
   # сток от core install: «Hello World», «Sample Page» и черновик «Privacy Policy» —
   # в песочнице их нет, свой privacy приедет из WXR. --name ищет только в post
   # (дефолт), поэтому --post_type=any; --post_status=any — иначе не виден черновик
