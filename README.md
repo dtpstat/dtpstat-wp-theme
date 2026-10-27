@@ -42,6 +42,7 @@ bash bin/install.sh \
 | Путь | Назначение |
 |---|---|
 | `bin/install.sh` | Точка входа в новый серверный установщик |
+| `bin/generate-config.py`, `wordpress.env.example` | Генерация PHP-констант для темы из проектного `.env` |
 | `bin/install.py`, `bin/install-wp.php` | Проверки, резервная копия, импорт и проверка результата через WP-CLI |
 | `content/export.xml` | WXR с контентом и записями вложений; при импорте вложения исключаются |
 | `content/attachments.json` | ID, данные и метаданные медиа для точного восстановления |
@@ -72,12 +73,13 @@ bash bin/install.sh \
 
 Карта — отдельный фронтенд: [website-frontend-mask](https://github.com/dtpstat/website-frontend-mask). API — отдельный проект: [dtpstat-map](https://github.com/dtpstat/dtpstat-map). В этом репозитории они не устанавливаются.
 
-Адрес главной карты задаётся `DTP_MAP_URL`, карточек `/dtp/<id>/` — `DTP_FRONTEND_URL`. В WXR для карты хранится `src="about:blank"`; `front-page.php` подставляет адрес на каждый HTTP-запрос, в том числе для уже установленного WordPress со старым `src`. Значения, контактный email и внешние ссылки задаются в [wordpress.env.example](wordpress.env.example), который нужно скопировать в `.env` WordPress **до деплоя темы**. См. [SETUP.md](SETUP.md).
+Адрес главной карты задаётся `DTP_MAP_URL`, карточек `/dtp/<id>/` — `DTP_FRONTEND_URL`. В WXR для карты хранится `src="about:blank"`; `front-page.php` подставляет адрес при рендеринге, в том числе для ранее сохранённого iframe. Все внешние URL и контакты определяются в **проектном** `.env` на основе [wordpress.env.example](wordpress.env.example), но WordPress **не читает `.env`**. До обновления темы выполните `python3 bin/generate-config.py --output /ABS/PATH/wp-content/dtpstat-config.php`: генератор создаст PHP-константы, которые подключает тема. Подробности: [SETUP.md](SETUP.md).
 
 ## Разработка и проверки
 
 ```bash
 python3 -m unittest discover -s tests -v
+python3 bin/generate-config.py --output /ABS/PATH/wp-content/dtpstat-config.php --check
 bash -n bin/install.sh
 php -l bin/install-wp.php
 ```
