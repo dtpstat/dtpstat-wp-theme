@@ -214,7 +214,7 @@ function dtp_env( $key, $default = '' ) {
 				[ $k, $v ] = explode( '=', $line, 2 );
 				$k = trim( $k );
 				if ( ! array_key_exists( $k, $vars ) ) {
-					$vars[ $k ] = trim( $v, " \\t\\\"'" );
+					$vars[ $k ] = trim( $v, " \t\"'" );
 				}
 			}
 		}
