@@ -67,94 +67,60 @@ npm run build
 
 ## 3. Конфигурация WordPress: .env → PHP-константы
 
-**WordPress теперь НЕ читает `.env` ни на одном HTTP-запросе.**
+WordPress **не читает .env во время HTTP-запросов**. Источник конфигурации
+лежит в `<repo>/.env`; PHP-константы попадают в
+`WP_CONTENT_DIR/dtpstat-config.php`. Не используйте общую
+`/var/www/.env` и не храните секреты в этом публичном PHP-конфиге.
 
-Источником является **`.env` корня этого репозитория**, например
-`/var/www/dtpstat-wp-theme/.env`. Это конфигурация *только данного проекта*,
-не общий `/var/www/.env`. Файл игнорируется Git.
+**Генерация — часть install/deploy, не отдельная обязательная команда.**
 
-Из него запускаемый вручную или установщиком генератор
-`bin/generate-config.py` создаёт
-`WP_CONTENT_DIR/dtpstat-config.php`, например
-`/var/www/wp/wp-content/dtpstat-config.php`.
-Тема в `functions.php` подключает этот PHP-файл через `require_once` и
-использует только объявленные в нём константы. Поскольку конфиг расположен
-**за пределами каталога темы**, `rsync --delete` темы его не удалит.
-Внешние ссылки в обычном контенте не переписываются.
+- Первичная установка: `bin/install.sh --wp-path ...` проверяет и
+  генерирует PHP-конфиг сам, в рамках установки.
+- Только обновление темы или настроек: `bin/deploy.sh --wp-path ...`
+  проверяет `.env`, генерирует PHP и переключает версию темы.
+- Оба сценария поддерживают предварительную проверку `--check`,
+  не изменяющую рабочий WordPress.
+- `DTP_MAP_URL` — главная карта, `DTP_FRONTEND_URL` — карточки
+  `/dtp/<id>/`. Оба обязательны.
+
+Пример для уже установленного WordPress:
 
 ```bash
 cd /var/www/dtpstat-wp-theme
 
-# Один раз: скопировать пример и указать реальные адреса.
+# Первый раз: создать собственный .env из шаблона.
+# Далее редактировать его без коммитов в Git.
 cp -n wordpress.env.example .env
 
-# Проверка без создания/обновления PHP-файла:
-python3 bin/generate-config.py \
-  --output /var/www/wp/wp-content/dtpstat-config.php \
-  --check
+# Только проверка:
+bash bin/deploy.sh --wp-path /var/www/wp --check
 
-# Явная генерация после успешной проверки:
-python3 bin/generate-config.py \
-  --output /var/www/wp/wp-content/dtpstat-config.php
-
-# Синтаксис и права:
-php -l /var/www/wp/wp-content/dtpstat-config.php
-stat -c '%U:%G %a %n' /var/www/wp/wp-content/dtpstat-config.php
+# После проверки и подготовки развёртывания:
+bash bin/deploy.sh --wp-path /var/www/wp
 ```
 
-Путь после `--output` должен соответствовать **фактическому**
-`WP_CONTENT_DIR` WordPress; здесь показан пример для стандартной установки.
-Генератор не требует загрузки WordPress и не меняет БД. Файл пишется
-атомарной заменой и содержит только перечисленные публичные адреса и
-контактные сведения; **пароли/секреты в такой конфигурации запрещены**.
-Внешний доступ к `wp-content/dtpstat-config.php` без WordPress не раскрывает
-константы: PHP-файл защищён проверкой `ABSPATH`. Также обеспечьте
-корректную обработку PHP на веб-сервере.
+См. [DEPLOY.md](DEPLOY.md) для безопасности, схемы версий и работы с
+символической ссылкой. Деплой создаёт отдельный релиз темы в
+`wp-content/dtpstat-releases/` и только затем переключает ссылку
+`wp-content/themes/dtpstat-child`. Это устраняет прежнюю ситуацию,
+когда `git pull` непосредственно изменял работающий PHP-код.
 
-Пример настройки `<repo>/.env`:
+Если исходники запущены из отдельного Git worktree, укажите
+`--env-file /var/www/dtpstat-wp-theme/.env`: вручную переносить
+конфиг в `wp-content` не требуется.
 
-```dotenv
-DTP_MAP_URL=https://map.example.org
-DTP_FRONTEND_URL=https://frontend.example.org
-DTP_CONTACT_EMAIL=contact@example.org
-```
+В импортируемом `content/export.xml` карта использует
+`src="about:blank"`. Тема при рендеринге подставляет адрес из константы
+`DTP_MAP_URL`, даже если в БД WordPress осталась старая ссылка.
+Ссылки футера и контактные данные тоже берутся из сгенерированных констант.
 
-Используйте полный [wordpress.env.example](wordpress.env.example) для
-контактного Telegram и `DTP_SOCIAL_*_URL`. Оба адреса
-`DTP_MAP_URL` и `DTP_FRONTEND_URL` обязательны для генерации;
-необязательные ссылки при пустом значении не выводятся.
-`DTP_MAP_URL` задаёт карту главной, `DTP_FRONTEND_URL` — карточки
-`/dtp/<id>/`. Для главной в WXR хранится `src="about:blank"`, а
-`front-page.php` при отображении подставляет значение константы в
-первый iframe. Это действует и для ранее сохранённого URL в БД.
+### Необязательный старый стенд Docker Compose
 
-При **изменении .env** нужно повторно выполнить генератор. Кэш HTML/CDN
-может требовать сброса; при `opcache.validate_timestamps=0` необходимо
-штатно обновить/инвалидировать OPcache. Ни PHP-FPM, ни WordPress
-автоматически не следят за изменением `.env`.
-
-### Старый серверный файл `/var/www/.env`
-
-Для миграции ранее настроенного сайта сохраните его копию
-в `/var/www/dtpstat-wp-theme/.env` (с правами доступа владельца),
-проверьте значения, выполните `--check` и генерацию **до обновления
-работающей темы**. Старый файл не нужно удалять до успешной проверки сайта:
-новый код его игнорирует. Не используйте `sudo git pull`.
-
-### Необязательный стенд Docker Compose
-
-Для отдельно существующего стенда на базе `compose.yml` выходной PHP
-создаётся в `config/dtpstat-config.php`, после чего монтируется
-в контейнеры `wp` и `wpcli` как
-`/var/www/html/wp-content/dtpstat-config.php` (read-only):
-
-```bash
-python3 bin/generate-config.py --output "$(pwd)/config/dtpstat-config.php"
-```
-
-До создания файла `docker compose up` не запускайте; Compose не
-транслирует переменные `DTP_*` напрямую в PHP. Старый
-`bin/frontend-url.sh` отключён, поскольку писал `.env` в docroot.
+Стенд `compose.yml` независим от серверного `bin/install.sh`.
+Он монтирует готовый `config/dtpstat-config.php` как read-only в `wp` и
+`wpcli`. Для его первоначальной подготовки допускается явно собрать
+конфиг в `config/` с помощью `bin/generate-config.py`, после чего запускать
+`docker compose up`. Это не процедура развёртывания обычного WordPress.
 
 ## 4. Проверить связку
 
