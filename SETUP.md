@@ -87,12 +87,12 @@ cd /var/www/dtpstat-wp-theme
 cp -n wordpress.env.example .env
 
 # Проверка без создания/обновления PHP-файла:
-python3 bin/generate-config.py \\
-  --output /var/www/wp/wp-content/dtpstat-config.php \\
+python3 bin/generate-config.py \
+  --output /var/www/wp/wp-content/dtpstat-config.php \
   --check
 
 # Явная генерация после успешной проверки:
-python3 bin/generate-config.py \\
+python3 bin/generate-config.py \
   --output /var/www/wp/wp-content/dtpstat-config.php
 
 # Синтаксис и права:
