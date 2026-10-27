@@ -35,14 +35,23 @@
 			<div class="dtp-fcol">
 				<h4>Связаться:</h4>
 				<?php $ic = get_stylesheet_directory() . '/assets/img/social/'; ?>
-				<p class="dtp-contact dtp-contact--icon">
-					<?php echo file_get_contents( $ic . 'telegram-sm.svg' ); // phpcs:ignore ?>
-					<a href="https://t.me/shehovsov_md" target="_blank" rel="noopener">@shehovsov_md</a>
-				</p>
-				<p class="dtp-contact dtp-contact--icon">
-					<?php echo file_get_contents( get_stylesheet_directory() . '/assets/img/envelope-sm.svg' ); // phpcs:ignore ?>
-					<a href="mailto:dtp.stat@gmail.com">dtp.stat@gmail.com</a>
-				</p>
+				<?php
+				$contact_telegram = dtp_external_url( 'DTP_CONTACT_TELEGRAM_URL' );
+				$contact_label = dtp_env( 'DTP_CONTACT_TELEGRAM_LABEL', $contact_telegram );
+				$contact_email = sanitize_email( dtp_env( 'DTP_CONTACT_EMAIL' ) );
+				?>
+				<?php if ( $contact_telegram ) : ?>
+					<p class="dtp-contact dtp-contact--icon">
+						<?php echo file_get_contents( $ic . 'telegram-sm.svg' ); // phpcs:ignore ?>
+						<a href="<?php echo esc_url( $contact_telegram ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $contact_label ); ?></a>
+					</p>
+				<?php endif; ?>
+				<?php if ( is_email( $contact_email ) ) : ?>
+					<p class="dtp-contact dtp-contact--icon">
+						<?php echo file_get_contents( get_stylesheet_directory() . '/assets/img/envelope-sm.svg' ); // phpcs:ignore ?>
+						<a href="<?php echo esc_url( 'mailto:' . $contact_email ); ?>"><?php echo esc_html( $contact_email ); ?></a>
+					</p>
+				<?php endif; ?>
 			</div>
 
 			<div class="dtp-fcol">
@@ -72,21 +81,19 @@
 
 			<div class="dtp-socials">
 				<?php
-				// Порядок и иконки — из макета (Frame 579: 487, 488, 492, 490, 491):
-				// Telegram, X (Twitter), Instagram, Patreon, Boosty.
-				// Ссылки сняты со старого dtp-stat.ru (краул 120 страниц, 01.09.2026):
-				// t.me/dtp_stat и twitter.com/dtp_stat — в футере каждой страницы,
-				// patreon.com/crash_map и boosty.to/dtp-stat — из постов о сборах.
-				// instagram.com/dtp_stat — от Ильи (02.09.2026), до этого был `#`.
+				// Порядок и иконки — из макета; внешние URL задаются в .env WordPress.
 				$dir = get_stylesheet_directory() . '/assets/img/social/';
 				$socials = [
-					'Telegram'  => ['https://t.me/dtp_stat', 'telegram.svg', ''],
-					'X'         => ['https://twitter.com/dtp_stat', 'twitter.svg', ''],
-					'Instagram' => ['https://www.instagram.com/dtp_stat', 'instagram.svg', ''],
-					'Patreon'   => ['https://patreon.com/crash_map', 'patreon.svg', 'dtp-socials__black'],
-					'Boosty'    => ['https://boosty.to/dtp-stat', 'boosty.svg', 'dtp-socials__black'],
+					'Telegram'  => [dtp_external_url( 'DTP_SOCIAL_TELEGRAM_URL' ), 'telegram.svg', ''],
+					'X'         => [dtp_external_url( 'DTP_SOCIAL_X_URL' ), 'twitter.svg', ''],
+					'Instagram' => [dtp_external_url( 'DTP_SOCIAL_INSTAGRAM_URL' ), 'instagram.svg', ''],
+					'Patreon'   => [dtp_external_url( 'DTP_SOCIAL_PATREON_URL' ), 'patreon.svg', 'dtp-socials__black'],
+					'Boosty'    => [dtp_external_url( 'DTP_SOCIAL_BOOSTY_URL' ), 'boosty.svg', 'dtp-socials__black'],
 				];
 				foreach ( $socials as $name => [ $url, $file, $class ] ) {
+					if ( ! $url ) {
+						continue;
+					}
 					printf(
 						'<a href="%s" aria-label="%s" class="%s">%s</a>',
 						esc_url( $url ),

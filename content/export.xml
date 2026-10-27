@@ -1939,7 +1939,7 @@
 <div id="wp-block-themeisle-blocks-advanced-columns-7db06a08" class="wp-block-themeisle-blocks-advanced-columns has-1-columns has-desktop-equal-layout has-tablet-equal-layout has-mobile-equal-layout has-vertical-unset"><div class="wp-block-themeisle-blocks-advanced-columns-overlay"></div><div class="innerblocks-wrap"><!-- wp:themeisle-blocks/advanced-column {"id":"wp-block-themeisle-blocks-advanced-column-92b78d7c","columnWidth":"100","className":""} -->
 <div id="wp-block-themeisle-blocks-advanced-column-92b78d7c" class="wp-block-themeisle-blocks-advanced-column"><!-- wp:html -->
 <iframe 
-src="https://fp.dtp-stat.ru/" 
+src="about:blank" 
 width="100%" 
 height="600"
 style="border:none; height:calc(100vh - 100px);">

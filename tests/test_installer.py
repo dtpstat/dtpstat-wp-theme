@@ -210,5 +210,18 @@ class InstallerTests(unittest.TestCase):
         subprocess.run(['php', '-l', str(BASE / 'bin/install-wp.php')], check=True, capture_output=True)
 
 
+    def test_theme_php_syntax(self):
+        for relative in ('theme/dtpstat-child/functions.php', 'theme/dtpstat-child/front-page.php',
+                         'theme/dtpstat-child/footer.php', 'tests/theme_env_fixture.php'):
+            with self.subTest(path=relative):
+                subprocess.run(['php', '-l', str(BASE / relative)], check=True, capture_output=True)
+
+    def test_theme_external_urls_from_dotenv(self):
+        result = subprocess.run(['php', str(BASE / 'tests/theme_env_fixture.php')],
+                                check=True, capture_output=True, text=True)
+        self.assertIn('theme dotenv tests passed', result.stdout)
+
+
+
 if __name__ == '__main__':
     unittest.main()

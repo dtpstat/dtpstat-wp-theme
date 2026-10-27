@@ -201,6 +201,7 @@ function dtp_env( $key, $default = '' ) {
 	static $vars = null;
 	if ( null === $vars ) {
 		$vars = [];
+		// Родительский .env приоритетнее, но недостающие ключи берём из WP/.env.
 		foreach ( [ dirname( ABSPATH ) . '/.env', ABSPATH . '/.env' ] as $file ) {
 			if ( ! is_readable( $file ) ) {
 				continue;
@@ -211,17 +212,45 @@ function dtp_env( $key, $default = '' ) {
 					continue;
 				}
 				[ $k, $v ] = explode( '=', $line, 2 );
-				$vars[ trim( $k ) ] = trim( $v, " \t\"'" );
+				$k = trim( $k );
+				if ( ! array_key_exists( $k, $vars ) ) {
+					$vars[ $k ] = trim( $v, " \t\"'" );
+				}
 			}
-			break;
 		}
 	}
 	return $vars[ $key ] ?? $default;
 }
 
-/** Адрес фронтенда карты/карточек ДТП для айфреймов (без слэша на конце). */
+/**
+ * Публичный адрес из конфигурации окружения.
+ * Без жёстко заданных доменов в теме. Значение должно быть http(s) URL без credentials.
+ */
+function dtp_external_url( $key ) {
+	$url = trim( (string) dtp_env( $key ) );
+	if ( '' === $url ) {
+		return '';
+	}
+	$parts = wp_parse_url( $url );
+	if ( ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), [ 'http', 'https' ], true )
+		|| empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] )
+		|| isset( $parts['query'] ) || isset( $parts['fragment'] ) ) {
+		return '';
+	}
+	return untrailingslashit( esc_url_raw( $url, [ 'http', 'https' ] ) );
+}
+
+/** Внешний фронтенд страниц /dtp/<id>/details/ (DTP_FRONTEND_URL). */
 function dtp_pages_url() {
-	return untrailingslashit( dtp_env( 'DTP_FRONTEND_URL', 'https://fe.dtp-stat.ru' ) );
+	return dtp_external_url( 'DTP_FRONTEND_URL' );
+}
+
+/**
+ * Главная карта: отдельный DTP_MAP_URL, при отсутствии — DTP_FRONTEND_URL.
+ * Не зависит от URL, сохранённого в post_content страницы «Главная».
+ */
+function dtp_map_url() {
+	return dtp_external_url( 'DTP_MAP_URL' ) ?: dtp_pages_url();
 }
 
 /**
@@ -240,7 +269,11 @@ add_action( 'template_redirect', function () {
 	?>
 	<div class="dtp-map">
 		<?php // Тот же details, что открывается по «Подробнее о ДТП» из попапа карты. ?>
-		<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+		<?php if ( dtp_pages_url() ) : ?>
+			<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+		<?php elseif ( current_user_can( 'manage_options' ) ) : ?>
+			<p>Настройте DTP_FRONTEND_URL в .env WordPress для отображения карточек ДТП.</p>
+		<?php endif; ?>
 	</div>
 	<?php
 	// footer.php не подключаем — у карточки внутри айфрейма свой футер
@@ -394,8 +427,13 @@ add_shortcode( 'dtp_vacancies', function () {
 		}
 		// футер-обёртка: авто-отступ сверху прижимает кнопку к низу плитки,
 		// чтобы в ряду карточек кнопки стояли на одной высоте
-		$out .= '<div class="dtp-job__footer"><a class="dtp-btn" href="mailto:dtp.stat@gmail.com?subject='
-			. rawurlencode( 'Волонтёрство: ' . $title ) . '">Откликнуться</a></div></div>';
+		$email = sanitize_email( dtp_env( 'DTP_CONTACT_EMAIL' ) );
+		$out .= '<div class="dtp-job__footer">';
+		if ( is_email( $email ) ) {
+			$out .= '<a class="dtp-btn" href="' . esc_url( 'mailto:' . $email . '?subject='
+				. rawurlencode( 'Волонтёрство: ' . $title ) ) . '">Откликнуться</a>';
+		}
+		$out .= '</div></div>';
 	}
 	return $out . '</div>';
 } );
