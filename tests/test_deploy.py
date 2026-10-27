@@ -83,11 +83,11 @@ class DeployTests(unittest.TestCase):
         old_target = self.dest.resolve()
         old_config = (self.content / 'dtpstat-config.php').read_bytes()
         self.env.write_text(
-            'DTP_MAP_URL=https://newmap.example.org\\n'
-            'DTP_FRONTEND_URL=https://details.example.org\\n',
+            'DTP_MAP_URL=https://newmap.example.org\n'
+            'DTP_FRONTEND_URL=https://details.example.org\n',
             encoding='utf-8',
         )
-        (self.theme / 'functions.php').write_text('<?php // updated\\n', encoding='utf-8')
+        (self.theme / 'functions.php').write_text('<?php // updated\n', encoding='utf-8')
         original_replace = os.replace
 
         def fail_only_link_switch(src, dst):
