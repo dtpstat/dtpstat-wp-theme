@@ -158,15 +158,15 @@ bash bin/deploy.sh --wp-path /var/www/wp
 ```bash
 cd /var/www/dtpstat-wp-theme
 php wp-cli.phar --path=/var/www/wp eval '
-printf("MAP=%s\\n", dtp_map_url());
-printf("FRONTEND=%s\\n", dtp_pages_url());
-printf("EMAIL=%s\\n", dtp_config("DTP_CONTACT_EMAIL"));
-printf("THEME=%s\\n", get_stylesheet());
+printf("MAP=%s\n", dtp_map_url());
+printf("FRONTEND=%s\n", dtp_pages_url());
+printf("EMAIL=%s\n", dtp_config("DTP_CONTACT_EMAIL"));
+printf("THEME=%s\n", get_stylesheet());
 '
 
 readlink -f /var/www/wp/wp-content/themes/dtpstat-child
-curl -fsS -o /dev/null -w 'Homepage: HTTP %{http_code}\\n' https://wp.dtp-stat.ru/
-curl -fsS -o /dev/null -w 'DTP page: HTTP %{http_code}\\n' https://wp.dtp-stat.ru/dtp/1/
+curl -fsS -o /dev/null -w 'Homepage: HTTP %{http_code}\n' https://wp.dtp-stat.ru/
+curl -fsS -o /dev/null -w 'DTP page: HTTP %{http_code}\n' https://wp.dtp-stat.ru/dtp/1/
 ```
 
 Для проверки самой карты нужно просмотреть **фактический HTML и iframe**,
@@ -214,8 +214,15 @@ readlink -f /var/www/wp/wp-content/themes/dtpstat-child
 
 **ВНИМАНИЕ: удаление worktree необратимо для его незакоммиченных файлов.**
 После проверки чистоты и независимости активной темы допускается:
-`git -C /var/www/dtpstat-wp-theme worktree remove
-"$HOME/dtpstat-release-7ef0c5f"` (одной командой в терминале).
+
+```bash
+# Действует только на вспомогательный checkout, не на активный релиз.
+test -z "$(git -C "$HOME/dtpstat-release-7ef0c5f" status --porcelain)"
+test "$(readlink -f /var/www/wp/wp-content/themes/dtpstat-child)" != \
+  "$(readlink -f "$HOME/dtpstat-release-7ef0c5f/theme/dtpstat-child")"
+git -C /var/www/dtpstat-wp-theme worktree remove "$HOME/dtpstat-release-7ef0c5f"
+```
+
 Не используйте `rm -rf` для удаления Git worktree: это оставляет
 устаревшие служебные записи.
 
