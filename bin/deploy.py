@@ -150,32 +150,45 @@ def deploy(args):
                 shutil.rmtree(temporary)
 
     # Compiler is the only writer of the PHP constants. It refuses unrelated files.
+    # If the final link switch fails, restore the previous config when possible.
+    previous_path = existing_link
     if needs_config:
         generator.write_config(config_file, generated)
 
-    previous_path = existing_link
-    if needs_switch:
-        fd, tempname = tempfile.mkstemp(prefix='.dtpstat-link-', dir=themes)
-        os.close(fd)
-        os.unlink(tempname)
-        moved_directory = None
-        try:
-            os.symlink(new_link, tempname)
-            if destination.is_dir() and not destination.is_symlink():
-                # Explicit migration of a physical theme directory.
-                # This cannot be completely atomic: save it intact and restore on error.
-                moved_directory = release_base / ('legacy-' + uuid.uuid4().hex)
-                os.rename(destination, moved_directory)
-                previous_path = str(moved_directory)
+    try:
+        if needs_switch:
+            fd, tempname = tempfile.mkstemp(prefix='.dtpstat-link-', dir=themes)
+            os.close(fd)
+            os.unlink(tempname)
+            moved_directory = None
             try:
-                os.replace(tempname, destination)
-            except OSError:
-                if moved_directory and not destination.exists() and not destination.is_symlink():
-                    os.rename(moved_directory, destination)
-                raise
-        finally:
-            if os.path.lexists(tempname):
-                os.unlink(tempname)
+                os.symlink(new_link, tempname)
+                if destination.is_dir() and not destination.is_symlink():
+                    # Explicit migration of a physical theme directory.
+                    # This cannot be completely atomic: save it intact and restore on error.
+                    moved_directory = release_base / ('legacy-' + uuid.uuid4().hex)
+                    os.rename(destination, moved_directory)
+                    previous_path = str(moved_directory)
+                try:
+                    os.replace(tempname, destination)
+                except OSError:
+                    if moved_directory and not destination.exists() and not destination.is_symlink():
+                        os.rename(moved_directory, destination)
+                    raise
+            finally:
+                if os.path.lexists(tempname):
+                    os.unlink(tempname)
+    except Exception:
+        if needs_config:
+            try:
+                if config_current is None:
+                    config_file.unlink()
+                else:
+                    generator.write_config(config_file, config_current)
+            except OSError as rollback_error:
+                print(f'ВНИМАНИЕ: не удалось вернуть прежний PHP-конфиг: {rollback_error}',
+                      file=sys.stderr)
+        raise
 
     print('DEPLOY OK: PHP-конфиг и тема установлены')
     if needs_switch:
