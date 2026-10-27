@@ -29,7 +29,7 @@ while ( have_posts() ) :
 			if ( $map_url ) {
 				echo $map_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML из the_content с безопасной заменой URL.
 			} elseif ( current_user_can( 'manage_options' ) ) {
-				echo '<p>Настройте DTP_MAP_URL или DTP_FRONTEND_URL в .env WordPress.</p>';
+				echo '<p>Настройте DTP_MAP_URL или DTP_FRONTEND_URL в проектном .env и сгенерируйте dtpstat-config.php.</p>';
 			}
 			?>
 		</div>
