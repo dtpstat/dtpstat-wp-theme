@@ -140,7 +140,7 @@ WordPress.org. Если версия есть в settings.json, применяе
 При нестандартном расположении исходника используйте:
 
 ```bash
-bash bin/install.sh --wp-path /var/www/wp \\
+bash bin/install.sh --wp-path /var/www/wp \
   --env-file /path/to/project/.env --check
 ```
 
@@ -148,8 +148,8 @@ bash bin/install.sh --wp-path /var/www/wp \\
 не нужно. Изменение настроек — отдельная безопасная команда:
 
 ```bash
-python3 bin/generate-config.py \\
-  --env-file /path/to/project/.env \\
+python3 bin/generate-config.py \
+  --env-file /path/to/project/.env \
   --output /var/www/wp/wp-content/dtpstat-config.php --check
 # После проверки повторить без --check
 ```
