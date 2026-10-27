@@ -427,8 +427,13 @@ add_shortcode( 'dtp_vacancies', function () {
 		}
 		// футер-обёртка: авто-отступ сверху прижимает кнопку к низу плитки,
 		// чтобы в ряду карточек кнопки стояли на одной высоте
-		$out .= '<div class="dtp-job__footer"><a class="dtp-btn" href="mailto:dtp.stat@gmail.com?subject='
-			. rawurlencode( 'Волонтёрство: ' . $title ) . '">Откликнуться</a></div></div>';
+		$email = sanitize_email( dtp_env( 'DTP_CONTACT_EMAIL' ) );
+		$out .= '<div class="dtp-job__footer">';
+		if ( is_email( $email ) ) {
+			$out .= '<a class="dtp-btn" href="' . esc_url( 'mailto:' . $email . '?subject='
+				. rawurlencode( 'Волонтёрство: ' . $title ) ) . '">Откликнуться</a>';
+		}
+		$out .= '</div></div>';
 	}
 	return $out . '</div>';
 } );
