@@ -194,6 +194,8 @@ def main():
     p.add_argument('--wp-bin', default='wp', help='исполняемый файл wp, без аргументов')
     p.add_argument('--wp-cli-phar', type=Path, help='вместо wp использовать php /path/wp-cli.phar')
     p.add_argument('--url', help='адрес сайта; по умолчанию текущий home')
+    p.add_argument('--env-file', type=Path, default=ROOT / '.env',
+                   help='проектный .env для генерации PHP-констант, по умолчанию <repo>/.env')
     p.add_argument('--allow-root', action='store_true')
     p.add_argument('--check', action='store_true', help='только предварительные проверки')
     p.add_argument('--remove-stock-content', action='store_true', help='удалить только стандартные записи hello-world, sample-page, privacy-policy')
@@ -341,6 +343,11 @@ def install(args, command, wp_path):
     if within(args.backup_dir, content) or within(args.log_dir, content):
         raise RuntimeError('Резервные копии и журналы не должны лежать внутри wp-content')
     theme_destination = Path(info['themes']) / 'dtpstat-child'
+    config_output = content / 'dtpstat-config.php'
+    config_command = [sys.executable, str(ROOT / 'bin/generate-config.py'),
+                      '--env-file', str(args.env_file), '--output', str(config_output)]
+    # Выявляем ошибки .env ДО резервной копии и любых изменений сайта.
+    run(config_command + ['--check'], args.timeout)
     needed, theme_link = inspect_content(content, theme, theme_destination)
     for directory in (theme, uploads):
         if any(path.is_symlink() for path in directory.rglob('*')):
@@ -368,6 +375,9 @@ def install(args, command, wp_path):
     # Проверки повторяем непосредственно перед первой мутацией.
     json_output(wp('eval-file', str(helper), 'preflight', str(settings), str(attachments),
                    content_policy, capture=True))
+    stage('Генерация PHP-констант из проектного .env')
+    MUTATIONS_STARTED = True
+    run(config_command, args.timeout)
     stage('3. Подготовка контента и язык')
     MUTATIONS_STARTED = True
     wp('eval-file', str(helper), 'prepare', str(settings), str(attachments), content_policy)
