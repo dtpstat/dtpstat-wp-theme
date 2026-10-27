@@ -1,167 +1,114 @@
-# Тема dtpstat-child на готовом WordPress + фронтенд карты
+# Развёртывание DTPStat: WordPress, фронтенд карты и API
 
-Предпосылка: WordPress уже установлен (ядро, `wp-config.php` с базой).
-Пакет накатывает на него тему `dtpstat-child` с контентом. Сама карта
-ДТП — отдельный статический фронтенд, который WP встраивает айфреймами:
-он собирается отдельно и подключается адресом (шаг 4). Управление —
-скрипты из `bin/` этого репозитория.
+Это инструкция по **связке компонентов**. Детали, ограничения и восстановление серверной установки WordPress находятся в [INSTALLER.md](INSTALLER.md). В [README.md](README.md) — обзор пакета.
 
-| Часть | Где | Что это |
+| Компонент | Репозиторий | Назначение |
 |---|---|---|
-| WP-сайт | этот репозиторий | тема `dtpstat-child` + контент, накатка на готовый WP |
-| Фронтенд карты | [dtpstat-pages](https://github.com/dtpstat/website-frontend-mask) | статика (vanilla TS → `dist/`) + сервер разработки с прокси `/api` |
-| Бэкенд API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | здесь не поднимается: фронтенду нужен адрес работающего экземпляра (`API_ORIGIN`) |
+| WordPress + `dtpstat-child` | [dtpstat-wp-theme](https://github.com/dtpstat/dtpstat-wp-theme) | Страницы, публикации, медиа, оформление и iframe |
+| Статический фронтенд | [website-frontend-mask](https://github.com/dtpstat/website-frontend-mask) | Карта и страницы отдельных ДТП (TypeScript → `dist/`) |
+| Backend API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | Данные для карты (разворачивается самостоятельно) |
 
-Связка: карта на главной WP — айфрейм фронтенда (URL зашит в **контент
-WP-страницы**, правится `wp search-replace`), карточки отдельных ДТП
-`/dtp/<EM_NUMBER>/` — айфрейм `/details/?id=…` (URL тема берёт из
-переменной `DTP_FRONTEND_URL`).
+Важное различие: **iframe карты на главной** записан в контенте WordPress, а **iframe карточек ДТП** `/dtp/<id>/` строится дочерней темой. Поэтому у них два независимых адреса.
 
-## Требования
+## 1. Установка пакета в уже установленный WordPress
 
-- установленный WordPress; wp-cli на его хосте (или своя команда в `--wp`);
-- rsync и python3 (нужны `bin/install.sh`);
-- Node ≥ 20.6 для сборки фронтенда (сборка и serve используют `node --env-file`).
-
-## 1. Забрать код
+Требуется одиночный WordPress (не multisite) с рабочими `wp-config.php` и WP-CLI, запуск непосредственно на сервере, а также Python ≥ 3.8, Bash, PHP CLI с расширениями, rsync и утилита экспорта БД. Новый `bin/install.sh` **не** устанавливает ядро WordPress, **не** поднимает Docker Compose и не поддерживает старые параметры `--external`, `--wp`, `--admin-pass`, `--reset` или `--force`.
 
 ```bash
-git clone --recurse-submodules git@github.com:dtpstat/dtpstat-wp-theme.git
-git clone git@github.com:dtpstat/website-frontend-mask.git
+git clone https://github.com/dtpstat/dtpstat-wp-theme.git /var/www/dtpstat-wp-theme
+cd /var/www/dtpstat-wp-theme
+
+# Проверка без изменения контента сайта:
+bash bin/install.sh \
+  --wp-path /var/www/wp \
+  --wp-cli-phar /var/www/dtpstat-wp-theme/wp-cli.phar \
+  --check
 ```
 
-Если WP на другой машине — доставьте пакет на её хост (скрипты запускаются
-**на самом хосте**: wp-cli-вызовы с eval через ssh теряют кавычки):
+Команды запускать от владельца файлов WordPress. Для использования установленного `wp` в PATH вместо `--wp-cli-phar` допустим `--wp-bin /usr/local/bin/wp`. Если сайт отличается от `home`, целевой URL можно указать через `--url https://example.org`.
+
+Для пустого по контенту WordPress после успешной проверки запустите ту же команду **без `--check`**. Если остались только штатные записи WordPress, и вы намерены их удалить, добавьте `--remove-stock-content` в обе команды.
+
+### ВНИМАНИЕ: установка поверх существующего сайта
+
+**`--replace-content` удаляет существующий контент и вложения**, после создания резервной копии БД и `wp-content`. Не обеспечивает автоматического отката и не сбрасывает все сторонние таблицы/настройки. Сайт не должен принимать параллельные изменения; перед началом подготовьте план ручного восстановления.
 
 ```bash
-rsync -a dtpstat-wp-theme/ host:~/dtpstat-wp-theme/
+# Сначала проверка будущего режима замены:
+bash bin/install.sh --wp-path /var/www/wp \
+  --wp-cli-phar /var/www/dtpstat-wp-theme/wp-cli.phar \
+  --replace-content --check
+
+# После проверки и подготовки восстановления:
+# повторить ТУ ЖЕ команду, убрав только --check.
 ```
 
-## 2. Накатить тему на WordPress
+Безопасная повторная установка поверх частичного импорта не предусмотрена. Каталоги резервных копий и журналов по умолчанию: `~/dtpstat-backups` и `~/dtpstat-install-logs`. Подробная процедура в [INSTALLER.md](INSTALLER.md).
+
+## 2. Фронтенд карты
+
+Сборку и её переменные необходимо сверять с [README фронтенда](https://github.com/dtpstat/website-frontend-mask#readme). Это отдельный проект; WP-установщик его не скачивает и не запускает.
 
 ```bash
-cd dtpstat-wp-theme
-bin/install.sh --external --url https://example.org \
-  --wp "wp --path=/path/to/site" \
-  --admin-pass 'пароль'   # нужен, только если ядро ещё не установлено (install сам сделает core install)
-
-bin/verify.sh https://example.org --external "wp --path=/path/to/site"
-```
-
-`install` накатывает всё остальное: тему (neve с пином версии из
-`content/settings.json` + `dtpstat-child`), плагины, медиа (~89 МБ,
-с ручными кропами), контент (страницы/посты/CPT), настройки и меню.
-Сразу после этого WP показывает **задеплоенный** фронтенд
-`https://dtpstat-pages.pages.dev` — система работает целиком, свой
-фронтенд подключается шагом 4.
-
-- непустая цель (повторная накатка) — см. «Грабли»;
-- если PHP работает под другим пользователем, отдайте ему `wp-content`
-  (группа + запись, setgid на каталогах), иначе медиа не зальётся.
-
-Если готового WordPress нет, `bin/install.sh` без `--external` поднимет
-собственный стенд на `:8086` (админ `ilya`/`wplocal`; сброс — `--reset`,
-порт — `WP_PORT=…`; первый старт занимает несколько минут).
-
-## 3. Фронтенд (`website-frontend-mask`)
-
-```bash
+git clone https://github.com/dtpstat/website-frontend-mask.git
 cd website-frontend-mask
-cp .env.example .env     # вписать YANDEX_MAPS_KEY, MAPBOX_ACCESS_TOKEN и API_ORIGIN
+cp .env.example .env
+# Указать нужные YANDEX_MAPS_KEY, MAPBOX_ACCESS_TOKEN и API_ORIGIN
 npm install
-npm run build            # tsc + копирование статики → dist/; из .env генерится dist/maps-config.js
-PORT=8180 npm run serve  # любой свободный порт (дефолт 8080); раздаёт dist/ и проксирует /api
+npm run check
+npm run build
 ```
 
-Проверка: `curl http://localhost:8180/api/dtp/filter_fields` → 200 — прокси
-до бэкенда жив.
+`dist/` — статические HTML/CSS/JS; их можно отдавать через nginx или аналогичный сервер. `dist/maps-config.js` хранит настройки карт и `API_ORIGIN`, его можно менять отдельно от исходной сборки (см. документацию фронтенда). Если `API_ORIGIN` пуст, на хостинге должен работать same-origin прокси `/api` к запущенному бэкенду; без прокси API не появится.
 
-- `API_ORIGIN` — адрес работающего экземпляра `dtpstat-map`; для прокси
-  serve он **обязателен**: с пустым значением `/api` будет отвечать 502
-  (same-origin `/api` — это вариант с nginx ниже).
-- serve умеет https (`DTP_CERT`/`DTP_KEY`) — нужно, только если встраивать
-  фронтенд айфреймом в https-сайт (см. «Грабли»).
+`npm run serve` — вариант для разработки: локально раздаёт `dist/` и проксирует `/api`. Для production используйте выбранную схему хостинга и HTTPS. Если сайт WordPress открыт по HTTPS, iframe фронтенда тоже должен открываться по HTTPS.
 
-### Вариант без serve: статика + nginx
+## 3. Связать WordPress с фронтендом
 
-`npm run serve` нужен только для разработки. Собранный `dist/` —
-самодостаточная статика (серверного кода нет, клиентской маршрутизации
-тоже — deep-links передаются query-параметрами, SPA-fallback не нужен),
-её отдаёт любой статический сервер. Заодно nginx даёт same-origin `/api`:
+**По состоянию экспортного пакета**:
 
-```nginx
-server {
-    listen 80;
-    server_name frontend.example.org;
+- Главная страница в `content/export.xml` содержит `<iframe src="https://fp.dtp-stat.ru/">`. Этот URL находится в **контенте страницы**; переменная `DTP_FRONTEND_URL` его не меняет.
+- Для `/dtp/<id>/` тема использует `DTP_FRONTEND_URL`. Значение по умолчанию в `theme/dtpstat-child/functions.php` — `https://fe.dtp-stat.ru`.
 
-    root /path/to/website-frontend-mask/dist;
-    index index.html;
+Чтобы изменить адрес iframe карточек, задайте переменную среды веб-процесса или `DTP_FRONTEND_URL` в `.env` на уровень выше корня WordPress либо внутри него. Переменная процесса имеет приоритет над файлом; доступный файл выше корня имеет приоритет над файлом внутри корня. Убедитесь, что `.env` не отдаётся веб-сервером публично.
 
-    # /api того же origin — вместо прокси serve.
-    # Тогда при сборке API_ORIGIN в .env оставьте пустым: пустое
-    # значение вшивается в статику, и страница ходит на свой /api
-    location /api/ {
-        proxy_pass https://api.example.org/api/;
-        proxy_set_header Host api.example.org;
-        proxy_ssl_server_name on;
-    }
-
-    location / { try_files $uri $uri/ =404; }
-}
+```dotenv
+DTP_FRONTEND_URL=https://frontend.example.org
 ```
 
-Кэш-правила для версионированных ассетов (`?v=`), свежего `maps-config.js`
-и HTML — в README фронтенда, раздел «Самостоятельный хостинг». Проверка
-всё та же: `curl http://frontend.example.org/api/dtp/filter_fields` → 200.
-
-## 4. Подключить WP к своему фронтенду
-
-Две настройки: айфреймы карточек `/dtp/<id>/` (берёт тема) и айфрейм
-карты на главной (он в контенте WP-страницы):
+Для главной страницы меняйте **только** URL внутри содержимого WordPress, сначала проверив совпадения. Ниже пример со стандартным WP-CLI, где имя таблицы учитывает фактический префикс:
 
 ```bash
-# айфреймы темы: переменная DTP_FRONTEND_URL в .env в каталоге WP
-# или уровнем выше — тема читает её на каждом запросе
-printf 'DTP_FRONTEND_URL=%s\n' 'https://frontend.example.org' >> /path/to/.env
-# айфрейм карты на главной — правится wp-cli по всем таблицам:
-wp --path=/path/to/site search-replace 'https://dtpstat-pages.pages.dev' \
-  'https://frontend.example.org' --all-tables
+PREFIX=$(wp --path=/var/www/wp db prefix)
+wp --path=/var/www/wp search-replace \
+  'https://fp.dtp-stat.ru/' 'https://frontend.example.org/' \
+  "${PREFIX}posts" --include-columns=post_content --dry-run
+
+# При корректном результате повторите команду без --dry-run.
 ```
 
-(этими же двумя настройками указывается любой другой адрес фронтенда;
-для стенда пакета из шага 2 вместо этого есть скрипты:
-`bin/frontend-url.sh <URL>` — вернуть дефолт `--default`, и
-`bin/wp.sh search-replace …`)
+Такая замена не затрагивает другие таблицы сайта. URL `--url` установщика относится к адресу **самого WordPress**, а не к адресу карты.
 
-## Проверка системы целиком
+## 4. Проверить связку
 
 ```bash
-SITE=https://example.org; FRONT=https://frontend.example.org
-# WP отдаёт главную с айфреймом фронтенда:
-curl -s "$SITE/" | grep -cF "$FRONT"                                 # ≥ 1
-# карточка ДТП строит айфрейм деталей:
-curl -s "$SITE/dtp/1/" | grep -o 'details/?id=1'                     # → details/?id=1
-# фронтенд жив и проксирует API:
-curl -so /dev/null -w '%{http_code}\n' "$FRONT/"                     # 200
-curl -so /dev/null -w '%{http_code}\n' "$FRONT/details/?id=1"        # 200
-curl -so /dev/null -w '%{http_code}\n' "$FRONT/api/dtp/filter_fields" # 200
+WP_URL=https://example.org
+FRONT_URL=https://frontend.example.org
+
+# WordPress, страница и asset темы:
+curl -I "$WP_URL/"
+curl -I "$WP_URL/wp-content/themes/dtpstat-child/assets/fonts/Roboto-Regular.woff2"
+
+# Фронтенд:
+curl -I "$FRONT_URL/"
+curl -I "$FRONT_URL/details/?id=1"
+
+# Доступность API за выбранным прокси:
+curl -s -o /dev/null -w '%{http_code}\n' "$FRONT_URL/api/dtp/filter_fields"
 ```
 
-## Грабли
+Также проверьте HTML главной страницы и `/dtp/1/` в браузере: правильный iframe, отсутствие блокировки mixed content, загрузку карты и запросы к API. Значение HTTP 200 само по себе не подтверждает корректную работу приложения.
 
-- **Повторная накатка** на непустую цель падает (защита от дублей
-  контента): либо чистая цель (на сервере — дамп, дроп таблиц по префиксу
-  и пустой каталог WP), либо осознанный `--force`. Для стенда пакета —
-  `bin/install.sh --reset`.
-- **Ключи карт обязательны**: сборка с пустым `.env` даст `dist/maps-config.js`
-  без ключей (карта не откроется). Пересоздать только конфиг без пересборки —
-  `npm run config`.
-- **Mixed content**: если WP открыт по https, айфрейм на
-  `http://localhost:…` браузер заблокирует. Тогда фронтенду нужен https
-  (`DTP_CERT`/`DTP_KEY` в serve или nginx с сертификатом) и оба адреса
-  из шага 4 — с его https-адресом.
+## 5. Обновления и устаревшие инструменты
 
-## Что осознанно не поднимается
-
-**Бэкенд** (`dtpstat-map`, Express + PostGIS): фронтенд работает с готовым
-экземпляром через `API_ORIGIN`; своя инсталляция описана в его `DEPLOY.md`.
+Для повторной выкладки **только темы** используйте [DEPLOY.md](DEPLOY.md). Экспорт из Docker-песочницы выполняется отдельно через `bin/export.sh`; он не является установщиком продакшена. `compose.yml`, `bin/wp.sh`, `bin/frontend-url.sh` и `bin/verify.sh` сохранились как инструменты прежнего стенда, но новый `bin/install.sh` их не вызывает.
