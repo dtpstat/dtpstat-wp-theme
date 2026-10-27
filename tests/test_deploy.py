@@ -39,6 +39,7 @@ class DeployTests(unittest.TestCase):
         self.dest.symlink_to(self.theme)
         self.args = argparse.Namespace(
             wp_path=self.wp, content_dir=None, env_file=self.env, check=False,
+            adopt_existing_directory=False,
         )
 
     def run_deploy(self, check=False):
@@ -85,6 +86,22 @@ class DeployTests(unittest.TestCase):
             self.run_deploy()
         self.assertEqual((self.dest / 'important.txt').read_text(), 'keep')
         self.assertFalse((self.content / 'dtpstat-config.php').exists())
+
+    def test_physical_directory_migration_requires_flag_and_preserves_old_version(self):
+        self.dest.unlink()
+        self.dest.mkdir()
+        (self.dest / 'style.css').write_text('/* Theme Name: legacy */')
+        (self.dest / 'functions.php').write_text('<?php // old')
+        (self.dest / 'old-file.txt').write_text('do not discard')
+        self.args.adopt_existing_directory = True
+        self.run_deploy(check=True)
+        self.assertTrue(self.dest.is_dir())
+        self.assertFalse(self.dest.is_symlink())
+        self.run_deploy()
+        self.assertTrue(self.dest.is_symlink())
+        backups = list((self.content / 'dtpstat-releases').glob('legacy-*'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / 'old-file.txt').read_text(), 'do not discard')
 
     def test_unknown_symlink_is_not_overwritten(self):
         self.dest.unlink()
