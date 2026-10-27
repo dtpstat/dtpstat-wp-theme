@@ -221,9 +221,9 @@ class InstallerTests(unittest.TestCase):
             root = Path(td)
             env = root / '.env'
             env.write_text(
-                "DTP_MAP_URL=https://map.example.org/\\n"
-                "DTP_FRONTEND_URL=https://details.example.org/\\n"
-                "DTP_CONTACT_EMAIL=team@example.org\\n",
+                "DTP_MAP_URL=https://map.example.org/\n"
+                "DTP_FRONTEND_URL=https://details.example.org/\n"
+                "DTP_CONTACT_EMAIL=team@example.org\n",
                 encoding='utf-8',
             )
             output = root / 'dtpstat-config.php'
