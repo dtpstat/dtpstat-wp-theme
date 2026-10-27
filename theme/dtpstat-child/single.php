@@ -28,8 +28,13 @@ while ( have_posts() ) :
 			?>
 		</div>
 		<?php if ( has_post_thumbnail() ) : ?>
-			<?php // обложка записи — целиком, без кропа (как на старом сайте); кроп — только в карточках ?>
+			<?php // обложка записи — целиком, без кропа (как на старом сайте);
+				// srcset выключаем: кропнутые размеры старых генераций (dtp-cover
+				// 856×482, dtp-card 480×270) не должны подставляться браузером.
+				// Кроп остаётся только в «внешних» вставках — карточках сетки. ?>
+			<?php add_filter( 'wp_calculate_image_srcset', '__return_empty_array' ); ?>
 			<div class="dtp-cover"><?php the_post_thumbnail( 'full' ); ?></div>
+			<?php remove_filter( 'wp_calculate_image_srcset', '__return_empty_array' ); ?>
 		<?php endif; ?>
 		<div class="dtp-entry">
 			<?php the_content(); ?>
