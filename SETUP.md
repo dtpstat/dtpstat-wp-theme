@@ -17,7 +17,10 @@
 ```bash
 git clone https://github.com/dtpstat/dtpstat-wp-theme.git /var/www/dtpstat-wp-theme
 cd /var/www/dtpstat-wp-theme
-test -e .env || install -m 0600 wordpress.env.example .env
+# Только для нового checkout: не перезаписывать существующий .env и symlink.
+if [ ! -e .env ] && [ ! -L .env ]; then
+  install -m 0600 wordpress.env.example .env
+fi
 # Проверить и при необходимости отредактировать URL в .env.
 
 # Проверка без изменения контента сайта:
