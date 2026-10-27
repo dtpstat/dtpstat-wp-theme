@@ -221,7 +221,7 @@ function dtp_env( $key, $default = '' ) {
 
 /** Адрес фронтенда карты/карточек ДТП для айфреймов (без слэша на конце). */
 function dtp_pages_url() {
-	return untrailingslashit( dtp_env( 'DTP_FRONTEND_URL', 'https://dtpstat-pages.pages.dev' ) );
+	return untrailingslashit( dtp_env( 'DTP_FRONTEND_URL', 'https://fe.dtp-stat.ru' ) );
 }
 
 /**
