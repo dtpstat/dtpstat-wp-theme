@@ -44,7 +44,7 @@ bash bin/install.sh \
 | Путь | Назначение |
 |---|---|
 | `bin/install.sh` | Точка входа в новый серверный установщик |
-| `bin/generate-config.py`, `wordpress.env.example` | Генерация PHP-констант для темы из проектного `.env` |
+| `bin/generate-config.py`, `wordpress.env.example` | Внутренний генератор PHP-констант для `install`/`deploy` и пример проектного `.env` |
 | `bin/install.py`, `bin/install-wp.php` | Проверки, резервная копия, импорт и проверка результата через WP-CLI |
 | `content/export.xml` | WXR с контентом и записями вложений; при импорте вложения исключаются |
 | `content/attachments.json` | ID, данные и метаданные медиа для точного восстановления |
@@ -53,7 +53,7 @@ bash bin/install.sh \
 | `theme/dtpstat-child/` | Код дочерней темы Neve (PHP/CSS/JS, локальные шрифты и изображения) |
 | `bin/verify.sh` | Отдельная *устаревшая* проверка стенда/HTTP, не вызывается новым установщиком |
 | `bin/export.sh` | Экспорт **из конкретной Docker-песочницы** (по умолчанию `local-wp-1`) |
-| `bin/deploy.sh` | Обновление **только темы** по rsync/SSH; не устанавливает контент |
+| `bin/deploy.sh`, `bin/deploy.py` | Локальный деплой темы и конфигурации; проверка, отдельный релиз, переключение symlink |
 | `compose.yml`, `bin/wp.sh`, `bin/frontend-url.sh` | Вспомогательные средства прежнего Docker-стенда, не запускаются новым `install.sh` |
 | `tests/` | Автоматические сценарии проверок установщика и пакета |
 
@@ -67,7 +67,7 @@ bash bin/install.sh \
 
 ## Обновление темы и экспорт контента
 
-После установки обновлять только исходники темы можно через `bin/deploy.sh` (см. [DEPLOY.md](DEPLOY.md)). Этот скрипт использует `rsync --delete` для целевого каталога темы, поэтому сначала проверьте `HOST` и `WP_PATH`.
+После установки обновлять тему **вместе с её PHP-конфигурацией** нужно через `bin/deploy.sh --wp-path /var/www/wp` (см. [DEPLOY.md](DEPLOY.md)). Прежде всего выполняйте тот же вызов с `--check`. Скрипт создаёт отдельный релиз темы, генерирует PHP-константы из проектного `.env` и переключает symlink; `rsync --delete` и удалённые HOST/WP_PATH больше не используются.
 
 `bin/export.sh` — отдельная процедура обновления экспортного пакета из старой Docker-песочницы. Она **перезаписывает** `content/export.xml`, `content/attachments.json`, `content/settings.json` и `content/uploads/`. Не запускайте экспорт против рабочего сайта без подготовки и проверки источника.
 
@@ -75,13 +75,13 @@ bash bin/install.sh \
 
 Карта — отдельный фронтенд: [website-frontend-mask](https://github.com/dtpstat/website-frontend-mask). API — отдельный проект: [dtpstat-map](https://github.com/dtpstat/dtpstat-map). В этом репозитории они не устанавливаются.
 
-Адрес главной карты задаётся `DTP_MAP_URL`, карточек `/dtp/<id>/` — `DTP_FRONTEND_URL`. В WXR для карты хранится `src="about:blank"`; `front-page.php` подставляет адрес при рендеринге, в том числе для ранее сохранённого iframe. Все внешние URL и контакты определяются в **проектном** `.env` на основе [wordpress.env.example](wordpress.env.example), но WordPress **не читает `.env`**. До обновления темы выполните `python3 bin/generate-config.py --output /ABS/PATH/wp-content/dtpstat-config.php`: генератор создаст PHP-константы, которые подключает тема. Подробности: [SETUP.md](SETUP.md).
+Адрес главной карты задаётся `DTP_MAP_URL`, карточек `/dtp/<id>/` — `DTP_FRONTEND_URL`. В WXR для карты хранится `src="about:blank"`; `front-page.php` подставляет адрес при рендеринге, в том числе для ранее сохранённого iframe. Все внешние URL и контакты определяются в **проектном** `.env` на основе [wordpress.env.example](wordpress.env.example), но WordPress **не читает `.env`**. Во время установки/деплоя `install` и `deploy` сами вызывают внутренний генератор и записывают константы, которые подключает тема. Отдельно запускать генератор на рабочем сайте не нужно. Подробности: [SETUP.md](SETUP.md).
 
 ## Разработка и проверки
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 bin/generate-config.py --output /ABS/PATH/wp-content/dtpstat-config.php --check
+bash bin/deploy.sh --wp-path /var/www/wp --check
 bash -n bin/install.sh
 php -l bin/install-wp.php
 ```
