@@ -18,9 +18,11 @@ add_action( 'wp_enqueue_scripts', function () {
 	// Базовый style.css дочерней темы (заголовок темы).
 	wp_enqueue_style( 'dtpstat-child', $dir . '/style.css', [ 'dtpstat-main' ], $ver );
 
-	// Стиль родительского Neve не нужен — вся вёрстка своя.
-	wp_dequeue_style( 'neve_style' );
-	wp_deregister_style( 'neve_style' );
+	// Neve подключает основной CSS под handle 'neve-style' на приоритете 10.
+	// Наш обработчик (приоритет 20) снимает его и связанную динамическую
+	// типографику, не затрагивая стили плагинов и собственные стили темы.
+	wp_dequeue_style( 'neve-style' );
+	wp_deregister_style( 'neve-style' );
 
 	// Скачивание файлов на странице «Скачать данные».
 	if ( is_page( 'download' ) ) {
