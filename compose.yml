@@ -29,18 +29,8 @@ services:
       WORDPRESS_DB_USER: wp
       WORDPRESS_DB_PASSWORD: wplocal
       WORDPRESS_DB_NAME: wordpress
-      # Внешние URL дочерней темы: задаются в окружении compose или .env проекта.
-      # Новый bin/install.sh использует отдельный сценарий (не Compose).
-      DTP_FRONTEND_URL: ${DTP_FRONTEND_URL:-}
-      DTP_MAP_URL: ${DTP_MAP_URL:-}
-      DTP_CONTACT_TELEGRAM_URL: ${DTP_CONTACT_TELEGRAM_URL:-}
-      DTP_CONTACT_TELEGRAM_LABEL: ${DTP_CONTACT_TELEGRAM_LABEL:-}
-      DTP_CONTACT_EMAIL: ${DTP_CONTACT_EMAIL:-}
-      DTP_SOCIAL_TELEGRAM_URL: ${DTP_SOCIAL_TELEGRAM_URL:-}
-      DTP_SOCIAL_X_URL: ${DTP_SOCIAL_X_URL:-}
-      DTP_SOCIAL_INSTAGRAM_URL: ${DTP_SOCIAL_INSTAGRAM_URL:-}
-      DTP_SOCIAL_PATREON_URL: ${DTP_SOCIAL_PATREON_URL:-}
-      DTP_SOCIAL_BOOSTY_URL: ${DTP_SOCIAL_BOOSTY_URL:-}
+      # Дочерняя тема читает только PHP-константы из wp-content/dtpstat-config.php.
+      # Внешние адреса формируются через bin/generate-config.py ДО docker compose up.
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_ENVIRONMENT_TYPE', 'local');
         if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
@@ -57,6 +47,7 @@ services:
     volumes:
       - wp_data:/var/www/html
       - ./theme/dtpstat-child:/var/www/html/wp-content/themes/dtpstat-child:ro
+      - ./config/dtpstat-config.php:/var/www/html/wp-content/dtpstat-config.php:ro
       - ./php-uploads.ini:/usr/local/etc/php/conf.d/zz-dtpstat.ini:ro
 
   # разовые команды: docker compose run --rm wpcli wp <команда>
@@ -83,6 +74,7 @@ services:
       - .:/pkg:ro
       # тема должна быть видна и wp-cli (иначе wp theme activate не найдёт style.css)
       - ./theme/dtpstat-child:/var/www/html/wp-content/themes/dtpstat-child:ro
+      - ./config/dtpstat-config.php:/var/www/html/wp-content/dtpstat-config.php:ro
 
 volumes:
   db_data:

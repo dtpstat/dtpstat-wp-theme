@@ -188,38 +188,19 @@ add_filter( 'template_include', function ( $tpl ) {
 } );
 
 /**
- * Значение для настройки темы: переменная окружения (php-fpm environment)
- * или строка KEY=VALUE в .env — сначала рядом с WP (вне docroot), затем
- * в корне WP. Строки-комментарии начинаются с #, значения в кавычках
- * раздеваются. Так адрес фронтенда не хардкодится в коде темы.
+ * Весь конфиг темы импортируется ОДИН РАЗ из сгенерированного PHP-файла.
+ * Файл создаёт bin/generate-config.py из проектного .env при настройке/
+ * деплое. PHP-FPM и WordPress никогда не открывают и не разбирают .env.
+ * WP_CONTENT_DIR поддерживает нестандартное расположение wp-content.
  */
-function dtp_env( $key, $default = '' ) {
-	$from_env = getenv( $key );
-	if ( false !== $from_env && '' !== $from_env ) {
-		return $from_env;
-	}
-	static $vars = null;
-	if ( null === $vars ) {
-		$vars = [];
-		// Родительский .env приоритетнее, но недостающие ключи берём из WP/.env.
-		foreach ( [ dirname( ABSPATH ) . '/.env', ABSPATH . '/.env' ] as $file ) {
-			if ( ! is_readable( $file ) ) {
-				continue;
-			}
-			foreach ( file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
-				$line = trim( $line );
-				if ( '' === $line || str_starts_with( $line, '#' ) || ! str_contains( $line, '=' ) ) {
-					continue;
-				}
-				[ $k, $v ] = explode( '=', $line, 2 );
-				$k = trim( $k );
-				if ( ! array_key_exists( $k, $vars ) ) {
-					$vars[ $k ] = trim( $v, " \t\"'" );
-				}
-			}
-		}
-	}
-	return $vars[ $key ] ?? $default;
+$dtp_generated_config = WP_CONTENT_DIR . '/dtpstat-config.php';
+if ( is_file( $dtp_generated_config ) ) {
+	require_once $dtp_generated_config;
+}
+
+/** Значение ранее сгенерированной PHP-константы, без getenv() или чтения .env. */
+function dtp_config( $key, $default = '' ) {
+	return defined( $key ) ? constant( $key ) : $default;
 }
 
 /**
@@ -227,7 +208,7 @@ function dtp_env( $key, $default = '' ) {
  * Без жёстко заданных доменов в теме. Значение должно быть http(s) URL без credentials.
  */
 function dtp_external_url( $key ) {
-	$url = trim( (string) dtp_env( $key ) );
+	$url = trim( (string) dtp_config( $key ) );
 	if ( '' === $url ) {
 		return '';
 	}
@@ -272,7 +253,7 @@ add_action( 'template_redirect', function () {
 		<?php if ( dtp_pages_url() ) : ?>
 			<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
 		<?php elseif ( current_user_can( 'manage_options' ) ) : ?>
-			<p>Настройте DTP_FRONTEND_URL в .env WordPress для отображения карточек ДТП.</p>
+			<p>Настройте DTP_FRONTEND_URL в проектном .env и создайте WP_CONTENT_DIR/dtpstat-config.php.</p>
 		<?php endif; ?>
 	</div>
 	<?php
@@ -427,7 +408,7 @@ add_shortcode( 'dtp_vacancies', function () {
 		}
 		// футер-обёртка: авто-отступ сверху прижимает кнопку к низу плитки,
 		// чтобы в ряду карточек кнопки стояли на одной высоте
-		$email = sanitize_email( dtp_env( 'DTP_CONTACT_EMAIL' ) );
+		$email = sanitize_email( dtp_config( 'DTP_CONTACT_EMAIL' ) );
 		$out .= '<div class="dtp-job__footer">';
 		if ( is_email( $email ) ) {
 			$out .= '<a class="dtp-btn" href="' . esc_url( 'mailto:' . $email . '?subject='

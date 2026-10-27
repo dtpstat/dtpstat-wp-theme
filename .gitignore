@@ -1,0 +1,14 @@
+# Environment values are site-specific and never committed.
+.env
+.env.*
+!.env.example
+
+# Generated PHP configuration is installed in the target WP_CONTENT_DIR.
+dtpstat-config.php
+
+# Local Python tooling
+__pycache__/
+*.py[cod]
+
+# Docker Compose maps this generated file read-only into WordPress.
+/config/dtpstat-config.php

@@ -37,8 +37,8 @@
 				<?php $ic = get_stylesheet_directory() . '/assets/img/social/'; ?>
 				<?php
 				$contact_telegram = dtp_external_url( 'DTP_CONTACT_TELEGRAM_URL' );
-				$contact_label = dtp_env( 'DTP_CONTACT_TELEGRAM_LABEL', $contact_telegram );
-				$contact_email = sanitize_email( dtp_env( 'DTP_CONTACT_EMAIL' ) );
+				$contact_label = dtp_config( 'DTP_CONTACT_TELEGRAM_LABEL', $contact_telegram );
+				$contact_email = sanitize_email( dtp_config( 'DTP_CONTACT_EMAIL' ) );
 				?>
 				<?php if ( $contact_telegram ) : ?>
 					<p class="dtp-contact dtp-contact--icon">
@@ -81,7 +81,7 @@
 
 			<div class="dtp-socials">
 				<?php
-				// Порядок и иконки — из макета; внешние URL задаются в .env WordPress.
+				// Порядок и иконки — из макета; внешние URL задаются в сгенерированном PHP-конфиге WordPress.
 				$dir = get_stylesheet_directory() . '/assets/img/social/';
 				$socials = [
 					'Telegram'  => [dtp_external_url( 'DTP_SOCIAL_TELEGRAM_URL' ), 'telegram.svg', ''],

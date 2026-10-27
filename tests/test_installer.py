@@ -175,6 +175,11 @@ class InstallerTests(unittest.TestCase):
             (package / 'content/settings.json').write_text(json.dumps({'source_url':'https://old.invalid'}))
             (package / 'content/attachments.json').write_text('[]')
             (package / 'content/export.xml').write_text('<rss><channel/></rss>')
+            (package / '.env').write_text(
+                'DTP_MAP_URL=https://map.example.org\n'
+                'DTP_FRONTEND_URL=https://details.example.org\n',
+                encoding='utf-8',
+            )
             info = dict(home='https://new.invalid',siteurl='https://new.invalid',
                         content=str(wp / 'wp-content'), themes=str(wp / 'wp-content/themes'),
                         uploads=str(wp / 'wp-content/uploads'), plugins_dir=str(wp / 'wp-content/plugins'),
@@ -182,6 +187,12 @@ class InstallerTests(unittest.TestCase):
             calls = []
             def fake_run(argv, limit, capture=False):
                 calls.append(argv)
+                if any(str(argument).endswith('/bin/generate-config.py') for argument in argv):
+                    self.assertIn('--check', argv, 'dry-run must never generate PHP config')
+                    self.assertEqual(Path(argv[argv.index('--env-file') + 1]), package / '.env')
+                    self.assertEqual(Path(argv[argv.index('--output') + 1]),
+                                     wp / 'wp-content/dtpstat-config.php')
+                    return ''
                 if 'eval-file' in argv:
                     self.assertIn('preflight', argv)
                     self.assertEqual(argv[-1], 'replace' if replace else 'no')
@@ -189,13 +200,17 @@ class InstallerTests(unittest.TestCase):
                 return ''
             import argparse
             args = argparse.Namespace(timeout=5,import_timeout=10,url=None,
-                remove_stock_content=False, replace_content=replace, check=True, backup_dir=base / 'backups', log_dir=base / 'logs')
+                env_file=package / '.env', remove_stock_content=False,
+                replace_content=replace, check=True, backup_dir=base / 'backups', log_dir=base / 'logs')
             before = sorted(str(p.relative_to(wp)) for p in wp.rglob('*'))
             with patch.object(m, 'ROOT', package), patch.object(m, 'run', fake_run), patch.object(m.shutil, 'which', return_value='/mock/bin'), contextlib.redirect_stdout(io.StringIO()):
                 m.install(args, ['wp', '--path=' + str(wp)], wp)
             self.assertEqual(before, sorted(str(p.relative_to(wp)) for p in wp.rglob('*')))
+            self.assertFalse((wp / 'wp-content/dtpstat-config.php').exists())
             self.assertFalse((base / 'backups').exists())
-            self.assertEqual(len(calls), 5)
+            self.assertEqual(len(calls), 6)
+            self.assertEqual(sum(any(str(a).endswith('/bin/generate-config.py') for a in call)
+                                 for call in calls), 1)
 
     def test_wxr_cdata_text_survives_roundtrip(self):
         text = '<!-- wp:image {"id":7} -->\n<figure a="x&y">\\hello</figure>'
@@ -216,11 +231,27 @@ class InstallerTests(unittest.TestCase):
             with self.subTest(path=relative):
                 subprocess.run(['php', '-l', str(BASE / relative)], check=True, capture_output=True)
 
-    def test_theme_external_urls_from_dotenv(self):
-        result = subprocess.run(['php', str(BASE / 'tests/theme_env_fixture.php')],
-                                check=True, capture_output=True, text=True)
-        self.assertIn('theme dotenv tests passed', result.stdout)
-
+    def test_theme_external_urls_from_generated_php(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            env = root / '.env'
+            env.write_text(
+                "DTP_MAP_URL=https://map.example.org/\n"
+                "DTP_FRONTEND_URL=https://details.example.org/\n"
+                "DTP_CONTACT_EMAIL=team@example.org\n",
+                encoding='utf-8',
+            )
+            output = root / 'dtpstat-config.php'
+            subprocess.run(
+                [sys.executable, str(BASE / 'bin/generate-config.py'),
+                 '--env-file', str(env), '--output', str(output)],
+                check=True, capture_output=True, text=True,
+            )
+            result = subprocess.run(
+                ['php', str(BASE / 'tests/theme_env_fixture.php'), str(output)],
+                check=True, capture_output=True, text=True,
+            )
+            self.assertIn('theme compiled PHP config tests passed', result.stdout)
 
 
 if __name__ == '__main__':
