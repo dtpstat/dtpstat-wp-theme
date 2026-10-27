@@ -227,9 +227,17 @@ class InstallerTests(unittest.TestCase):
 
     def test_theme_php_syntax(self):
         for relative in ('theme/dtpstat-child/functions.php', 'theme/dtpstat-child/front-page.php',
-                         'theme/dtpstat-child/footer.php', 'tests/theme_env_fixture.php'):
+                         'theme/dtpstat-child/footer.php', 'tests/theme_env_fixture.php',
+                         'tests/theme_styles_fixture.php'):
             with self.subTest(path=relative):
                 subprocess.run(['php', '-l', str(BASE / relative)], check=True, capture_output=True)
+
+    def test_theme_removes_neve_main_css_without_removing_child_styles(self):
+        result = subprocess.run(
+            ['php', str(BASE / 'tests/theme_styles_fixture.php')],
+            check=True, capture_output=True, text=True,
+        )
+        self.assertIn('parent Neve CSS dequeue tests passed', result.stdout)
 
     def test_theme_external_urls_from_generated_php(self):
         with tempfile.TemporaryDirectory() as td:
