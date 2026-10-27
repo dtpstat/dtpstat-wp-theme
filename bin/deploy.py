@@ -5,6 +5,7 @@ This is a theme-only deployment: no content import, DB mutation or service resta
 """
 
 import argparse
+import fcntl
 import hashlib
 import importlib.util
 import os
@@ -212,7 +213,18 @@ def main(argv=None):
     try:
         if not shutil.which('php'):
             raise ValueError('Для проверки исходников необходим php CLI')
-        deploy(args)
+        if args.check:
+            deploy(args)
+        else:
+            digest = hashlib.sha256(str(args.wp_path.resolve(strict=True)).encode()).hexdigest()[:24]
+            lock_path = Path(tempfile.gettempdir()) / ('dtpstat-deploy-' + digest + '.lock')
+            fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(fd, 'w') as lock:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    raise ValueError('Для этого WordPress уже выполняется deploy')
+                deploy(args)
     except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
         parser.exit(1, f'ОШИБКА deploy: {exc}\n')
 
