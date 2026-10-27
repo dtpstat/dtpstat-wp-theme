@@ -72,7 +72,7 @@ bash bin/install.sh \
 
 Карта — отдельный фронтенд: [website-frontend-mask](https://github.com/dtpstat/website-frontend-mask). API — отдельный проект: [dtpstat-map](https://github.com/dtpstat/dtpstat-map). В этом репозитории они не устанавливаются.
 
-В текущем WXR iframe главной страницы использует `https://fp.dtp-stat.ru/`. Адрес для iframe карточек `/dtp/<id>/` задаётся через `DTP_FRONTEND_URL`; значение по умолчанию в теме — `https://fe.dtp-stat.ru`. Эти адреса конфигурируются **раздельно** (см. [SETUP.md](SETUP.md)).
+Адрес главной карты задаётся `DTP_MAP_URL`, карточек `/dtp/<id>/` — `DTP_FRONTEND_URL`. В WXR для карты хранится `src="about:blank"`; `front-page.php` подставляет адрес на каждый HTTP-запрос, в том числе для уже установленного WordPress со старым `src`. Значения, контактный email и внешние ссылки задаются в [wordpress.env.example](wordpress.env.example), который нужно скопировать в `.env` WordPress **до деплоя темы**. См. [SETUP.md](SETUP.md).
 
 ## Разработка и проверки
 
