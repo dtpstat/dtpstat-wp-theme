@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
 THEME_NAME = 'dtpstat-child'
@@ -47,8 +48,8 @@ def inspect_theme(theme):
     return digest.hexdigest()[:20], php_files
 
 
-def verify_existing_theme_link(destination):
-    """Do not replace a physical directory or a link to an unrelated site."""
+def verify_existing_theme_link(destination, allow_directory=False):
+    """Do not replace a physical directory unless migration is explicitly requested."""
     if destination.is_symlink():
         target = destination.resolve()
         if (not target.is_dir() or
@@ -56,11 +57,17 @@ def verify_existing_theme_link(destination):
                 not (target / 'functions.php').is_file()):
             raise ValueError(f'Неизвестная или повреждённая ссылка темы: {destination} -> {target}')
         return os.readlink(destination)
+    if destination.is_dir():
+        if not (destination / 'style.css').is_file() or not (destination / 'functions.php').is_file():
+            raise ValueError(f'Нельзя мигрировать неизвестный каталог темы: {destination}')
+        if not allow_directory:
+            raise ValueError(
+                f'{destination} — обычный каталог, не symlink. '
+                'Миграция требует --adopt-existing-directory и резервной копии.'
+            )
+        return 'DIRECTORY (migration requested)'
     if destination.exists():
-        raise ValueError(
-            f'{destination} — обычный каталог, не symlink. '
-            'Автоматическая замена существующего каталога запрещена.'
-        )
+        raise ValueError(f'Неожиданный тип назначения темы: {destination}')
     return None
 
 
@@ -89,7 +96,7 @@ def deploy(args):
     require_writable_directory(themes)
     if release_base.exists():
         require_writable_directory(release_base)
-    existing_link = verify_existing_theme_link(destination)
+    existing_link = verify_existing_theme_link(destination, args.adopt_existing_directory)
 
     values = generator.read_env(args.env_file)
     generated = generator.render(values)
@@ -146,20 +153,33 @@ def deploy(args):
     if needs_config:
         generator.write_config(config_file, generated)
 
+    previous_path = existing_link
     if needs_switch:
         fd, tempname = tempfile.mkstemp(prefix='.dtpstat-link-', dir=themes)
         os.close(fd)
         os.unlink(tempname)
+        moved_directory = None
         try:
             os.symlink(new_link, tempname)
-            os.replace(tempname, destination)  # Atomic only when old destination is a symlink/absent.
+            if destination.is_dir() and not destination.is_symlink():
+                # Explicit migration of a physical theme directory.
+                # This cannot be completely atomic: save it intact and restore on error.
+                moved_directory = release_base / ('legacy-' + uuid.uuid4().hex)
+                os.rename(destination, moved_directory)
+                previous_path = str(moved_directory)
+            try:
+                os.replace(tempname, destination)
+            except OSError:
+                if moved_directory and not destination.exists() and not destination.is_symlink():
+                    os.rename(moved_directory, destination)
+                raise
         finally:
             if os.path.lexists(tempname):
                 os.unlink(tempname)
 
     print('DEPLOY OK: PHP-конфиг и тема установлены')
     if needs_switch:
-        print(f'Предыдущая ссылка для ручного отката: {existing_link or "(не было)"}')
+        print(f'Предыдущая тема для ручного отката: {previous_path or "(не было)"}')
     print('Проверьте WordPress HTTP, карту, карточку ДТП и PHP/OPcache после выкладки.')
 
 
@@ -173,6 +193,8 @@ def main(argv=None):
                         help='проектный .env (по умолчанию <repo>/.env)')
     parser.add_argument('--check', action='store_true',
                         help='проверить все этапы, не изменяя сайт')
+    parser.add_argument('--adopt-existing-directory', action='store_true',
+                        help='осознанно мигрировать обычный каталог темы в резервную папку; без этого запрещено')
     args = parser.parse_args(argv)
     try:
         if not shutil.which('php'):
