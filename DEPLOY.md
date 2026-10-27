@@ -43,24 +43,31 @@ rsync -azn --delete --itemize-changes \
 
 После выкладки проверьте страницы и PHP-журнал WordPress. Тема должна быть установлена и активирована заранее.
 
-## Конфигурация внешних URL
+## Конфигурация темы: только сгенерированные PHP-константы
 
-**До выкладки этой версии темы** настройте `.env` WordPress по
-[wordpress.env.example](wordpress.env.example). Сами значения не входят в
-`rsync` и должны находиться на сервере.
+**До выкладки темы обязательно создайте**
+`WP_CONTENT_DIR/dtpstat-config.php` через
+`bin/generate-config.py` из проектного `<repo>/.env`.
+Например, для WordPress в `/var/www/wp`:
 
-- `DTP_MAP_URL`: iframe карты на главной. Первый iframe из содержимого
-  `front-page.php` получает `src` из этой переменной при рендеринге;
-  старый адрес из базы больше не применяется.
-- `DTP_FRONTEND_URL`: iframe страниц `/dtp/<id>/details/`.
-- `DTP_CONTACT_EMAIL`, `DTP_CONTACT_TELEGRAM_*`, `DTP_SOCIAL_*_URL`:
-  контактные и внешние ссылки.
+```bash
+cd /var/www/dtpstat-wp-theme
+python3 bin/generate-config.py --output /var/www/wp/wp-content/dtpstat-config.php --check
+python3 bin/generate-config.py --output /var/www/wp/wp-content/dtpstat-config.php
+php -l /var/www/wp/wp-content/dtpstat-config.php
+```
 
-`dtp_env()` читает сначала окружение PHP, затем `.env` на уровень выше
-корня WordPress и значения отсутствующих ключей из корня WP. Обновление
-`.env` не требует повторного импорта данных, но кэш HTML/CDN может
-потребовать очистки. При отсутствии URL соответствующие iframe/ссылки
-не выводятся (для администратора показывается сообщение о настройке).
+Это отдельный файл **за пределами каталога темы**; `rsync --delete`
+при выкладке темы его не трогает. Тема единожды подключает
+`WP_CONTENT_DIR/dtpstat-config.php` через `require_once` и использует
+константы `DTP_MAP_URL`, `DTP_FRONTEND_URL`, `DTP_CONTACT_*` и
+`DTP_SOCIAL_*_URL`. PHP-код сайта никогда не парсит `.env`.
+Изменения источника применяются только после повторной генерации и
+обновления HTML/OPcache при необходимости.
+
+`bin/deploy.sh` **не переносит** .env и не запускает генератор на
+сервере: конфигурация целевого сайта должна быть подготовлена отдельно.
+Подробности и порядок безопасной миграции — [SETUP.md](SETUP.md).
 
 ## Проверки
 
