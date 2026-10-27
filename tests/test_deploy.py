@@ -105,6 +105,8 @@ class DeployTests(unittest.TestCase):
     def test_plain_directory_is_not_overwritten(self):
         self.dest.unlink()
         self.dest.mkdir()
+        (self.dest / 'style.css').write_text('/* Theme Name: old */')
+        (self.dest / 'functions.php').write_text('<?php // old')
         (self.dest / 'important.txt').write_text('keep')
         with self.assertRaisesRegex(ValueError, 'обычный каталог'):
             self.run_deploy()
