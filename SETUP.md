@@ -8,7 +8,7 @@
 | Статический фронтенд | [website-frontend-mask](https://github.com/dtpstat/website-frontend-mask) | Карта и страницы отдельных ДТП (TypeScript → `dist/`) |
 | Backend API | [dtpstat-map](https://github.com/dtpstat/dtpstat-map) | Данные для карты (разворачивается самостоятельно) |
 
-Важное различие: **iframe карты на главной** записан в контенте WordPress, а **iframe карточек ДТП** `/dtp/<id>/` строится дочерней темой. Поэтому у них два независимых адреса.
+Важное различие: **iframe карты на главной** записан в контенте WordPress, а **iframe карточек ДТП** `/dtp/<id>/` строится дочерней темой. Поэтому у них два отдельных параметра конфигурации; их значения могут совпадать (как на текущем сайте).
 
 ## 1. Установка пакета в уже установленный WordPress
 
@@ -17,6 +17,11 @@
 ```bash
 git clone https://github.com/dtpstat/dtpstat-wp-theme.git /var/www/dtpstat-wp-theme
 cd /var/www/dtpstat-wp-theme
+# Только для нового checkout: не перезаписывать существующий .env и symlink.
+if [ ! -e .env ] && [ ! -L .env ]; then
+  install -m 0600 wordpress.env.example .env
+fi
+# Проверить и при необходимости отредактировать URL в .env.
 
 # Проверка без изменения контента сайта:
 bash bin/install.sh \
@@ -25,7 +30,7 @@ bash bin/install.sh \
   --check
 ```
 
-**До первого `--check`** создайте `<repo>/.env` по шаблону `wordpress.env.example` (см. раздел 3): установщик проверит обязательные внешние URL и целевой PHP-конфиг без записи. При настоящей установке генерация выполняется после резервной копии `wp-content`.
+**До первого `--check`** проверьте `<repo>/.env` (он создаётся из `wordpress.env.example` выше; см. раздел 3): установщик проверит обязательные внешние URL и целевой PHP-конфиг без записи. При настоящей установке генерация выполняется после резервной копии `wp-content`.
 
 Команды запускать от владельца файлов WordPress. Для использования установленного `wp` в PATH вместо `--wp-cli-phar` допустим `--wp-bin /usr/local/bin/wp`. Если сайт отличается от `home`, целевой URL можно указать через `--url https://example.org`.
 
@@ -83,19 +88,17 @@ WordPress **не читает .env во время HTTP-запросов**. Ис
 - `DTP_MAP_URL` — главная карта, `DTP_FRONTEND_URL` — карточки
   `/dtp/<id>/`. Оба обязательны.
 
-Пример для уже установленного WordPress:
+Для существующего сайта, у которого `.env` уже подготовлен, запуск
+`deploy` выполняется без отдельной ручной генерации конфигурации:
 
 ```bash
 cd /var/www/dtpstat-wp-theme
 
-# Первый раз: создать собственный .env из шаблона.
-# Далее редактировать его без коммитов в Git.
-cp -n wordpress.env.example .env
-
 # Только проверка:
 bash bin/deploy.sh --wp-path /var/www/wp --check
 
-# После проверки и подготовки развёртывания:
+# ВНИМАНИЕ: после проверки и резервной копии этот запуск
+# изменит PHP-конфиг и переключит активную тему:
 bash bin/deploy.sh --wp-path /var/www/wp
 ```
 
@@ -125,8 +128,8 @@ bash bin/deploy.sh --wp-path /var/www/wp
 ## 4. Проверить связку
 
 ```bash
-WP_URL=https://example.org
-FRONT_URL=https://frontend.example.org
+WP_URL=https://wp.dtp-stat.ru
+FRONT_URL=https://fe.dtp-stat.ru
 
 # WordPress, страница и asset темы:
 curl -I "$WP_URL/"
@@ -144,4 +147,4 @@ curl -s -o /dev/null -w '%{http_code}\n' "$FRONT_URL/api/dtp/filter_fields"
 
 ## 5. Обновления и устаревшие инструменты
 
-Для повторной выкладки **только темы** используйте [DEPLOY.md](DEPLOY.md). Экспорт из Docker-песочницы выполняется отдельно через `bin/export.sh`; он не является установщиком продакшена. `compose.yml`, `bin/wp.sh`, `bin/frontend-url.sh` и `bin/verify.sh` сохранились как инструменты прежнего стенда, но новый `bin/install.sh` их не вызывает.
+Для повторной выкладки **только темы** используйте [DEPLOY.md](DEPLOY.md). Экспорт из Docker-песочницы выполняется отдельно через `bin/export.sh`; он не является установщиком продакшена. `compose.yml`, `bin/wp.sh` и `bin/verify.sh` сохранены как инструменты отдельного Docker-стенда; серверные `install`/`deploy` их не вызывают. Устаревший `bin/frontend-url.sh` удалён: он не был рабочим способом обновления WordPress.
