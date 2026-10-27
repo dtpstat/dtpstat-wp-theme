@@ -253,7 +253,7 @@ add_action( 'template_redirect', function () {
 		<?php if ( dtp_pages_url() ) : ?>
 			<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
 		<?php elseif ( current_user_can( 'manage_options' ) ) : ?>
-			<p>Настройте DTP_FRONTEND_URL в .env WordPress для отображения карточек ДТП.</p>
+			<p>Настройте DTP_FRONTEND_URL в проектном .env и создайте WP_CONTENT_DIR/dtpstat-config.php.</p>
 		<?php endif; ?>
 	</div>
 	<?php
