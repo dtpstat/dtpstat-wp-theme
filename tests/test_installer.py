@@ -176,8 +176,8 @@ class InstallerTests(unittest.TestCase):
             (package / 'content/attachments.json').write_text('[]')
             (package / 'content/export.xml').write_text('<rss><channel/></rss>')
             (package / '.env').write_text(
-                'DTP_MAP_URL=https://map.example.org\\n'
-                'DTP_FRONTEND_URL=https://details.example.org\\n',
+                'DTP_MAP_URL=https://map.example.org\n'
+                'DTP_FRONTEND_URL=https://details.example.org\n',
                 encoding='utf-8',
             )
             info = dict(home='https://new.invalid',siteurl='https://new.invalid',
