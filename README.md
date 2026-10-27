@@ -89,7 +89,8 @@ bash bin/install.sh \
 ```bash
 # Не требуют установленного WordPress
 python3 -m unittest discover -s tests -v
-bash -n bin/install.sh bin/deploy.sh
+bash -n bin/install.sh
+bash -n bin/deploy.sh
 php -l bin/install-wp.php
 
 # Проверка на сервере с уже установленным WP (без мутаций)
