@@ -28,8 +28,8 @@ while ( have_posts() ) :
 			?>
 		</div>
 		<?php if ( has_post_thumbnail() ) : ?>
-			<?php // обложка записи — та же карточка r=20, что в сетке блога ?>
-			<div class="dtp-cover"><?php the_post_thumbnail( 'dtp-cover' ); ?></div>
+			<?php // обложка записи — целиком, без кропа (как на старом сайте); кроп — только в карточках ?>
+			<div class="dtp-cover"><?php the_post_thumbnail( 'full' ); ?></div>
 		<?php endif; ?>
 		<div class="dtp-entry">
 			<?php the_content(); ?>

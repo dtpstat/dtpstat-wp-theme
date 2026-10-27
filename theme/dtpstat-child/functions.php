@@ -6,7 +6,7 @@
 
 add_action( 'wp_enqueue_scripts', function () {
 	$dir = get_stylesheet_directory_uri();
-	$ver = '0.2.37';
+	$ver = '0.2.38';
 
 	// Бургер-меню — на всех страницах (на главной футера нет).
 	wp_enqueue_script( 'dtpstat-main', $dir . '/assets/js/main.js', [], $ver, true );
@@ -47,13 +47,12 @@ add_action( 'after_setup_theme', function () {
 	 * совпадать с тем, что реально видно на сайте:
 	 *   dtp-card   — обложки карточек блога, 16:9 (как в вёрстке);
 	 *   dtp-person — фото команды 272×345 @2x;
-	 *   dtp-job    — фото вакансий 272×200 @2x;
-	 *   dtp-cover  — обложка записи, 16:9 в колонке 856.
+	 *   dtp-job    — фото вакансий 272×200 @2x.
+	 * Обложка записи выводится целиком (full), кроп ей не нужен.
 	 */
 	add_image_size( 'dtp-card', 480, 270, true );
 	add_image_size( 'dtp-person', 544, 690, true );
 	add_image_size( 'dtp-job', 544, 400, true );
-	add_image_size( 'dtp-cover', 856, 482, true );
 } );
 
 /** Размер основного контента (колонка 656px по макету + запас для медиа). */

@@ -917,13 +917,9 @@ p.dtp-intro { font-size: 20px; line-height: 30px; }
 .single .dtp-page__title { text-align: left; }
 .single .dtp-entry { max-width: 720px; }
 .dtp-postmeta { color: var(--navy-soft); font-size: 14px; margin-bottom: 24px; }
-/* обложка записи: та же карточка r=20 с тенью, что в сетке блога */
-.dtp-cover {
-	border-radius: 20px;
-	overflow: hidden;
-	box-shadow: 0 5px 30px #d4dadd;
-	margin-bottom: 32px;
-}
+/* обложка записи: целиком, без кропа и карточной обёртки — как на старом
+   сайте; обрезанные версии (dtp-card 16:9) — только в карточках сетки блога */
+.dtp-cover { margin-bottom: 32px; }
 .dtp-cover img { display: block; width: 100%; height: auto; }
 /* ссылки в тексте записи — подчёркнуты (иначе не видно, что кликабельны);
    карточки/кнопки/меню (где подчёркивание не нужно) переопределены выше */
