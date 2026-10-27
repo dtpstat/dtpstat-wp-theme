@@ -219,9 +219,35 @@ function dtp_env( $key, $default = '' ) {
 	return $vars[ $key ] ?? $default;
 }
 
-/** Адрес фронтенда карты/карточек ДТП для айфреймов (без слэша на конце). */
+/**
+ * Публичный адрес из конфигурации окружения.
+ * Без жёстко заданных доменов в теме. Значение должно быть http(s) URL без credentials.
+ */
+function dtp_external_url( $key ) {
+	$url = trim( (string) dtp_env( $key ) );
+	if ( '' === $url ) {
+		return '';
+	}
+	$parts = wp_parse_url( $url );
+	if ( ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), [ 'http', 'https' ], true )
+		|| empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] )
+		|| isset( $parts['query'] ) || isset( $parts['fragment'] ) ) {
+		return '';
+	}
+	return untrailingslashit( esc_url_raw( $url, [ 'http', 'https' ] ) );
+}
+
+/** Внешний фронтенд страниц /dtp/<id>/details/ (DTP_FRONTEND_URL). */
 function dtp_pages_url() {
-	return untrailingslashit( dtp_env( 'DTP_FRONTEND_URL', 'https://fe.dtp-stat.ru' ) );
+	return dtp_external_url( 'DTP_FRONTEND_URL' );
+}
+
+/**
+ * Главная карта: отдельный DTP_MAP_URL, при отсутствии — DTP_FRONTEND_URL.
+ * Не зависит от URL, сохранённого в post_content страницы «Главная».
+ */
+function dtp_map_url() {
+	return dtp_external_url( 'DTP_MAP_URL' ) ?: dtp_pages_url();
 }
 
 /**
@@ -240,7 +266,11 @@ add_action( 'template_redirect', function () {
 	?>
 	<div class="dtp-map">
 		<?php // Тот же details, что открывается по «Подробнее о ДТП» из попапа карты. ?>
-		<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+		<?php if ( dtp_pages_url() ) : ?>
+			<iframe title="Подробности ДТП" src="<?php echo esc_url( dtp_pages_url() . '/details/?id=' . rawurlencode( $m[1] ) ); ?>"></iframe>
+		<?php elseif ( current_user_can( 'manage_options' ) ) : ?>
+			<p>Настройте DTP_FRONTEND_URL в .env WordPress для отображения карточек ДТП.</p>
+		<?php endif; ?>
 	</div>
 	<?php
 	// footer.php не подключаем — у карточки внутри айфрейма свой футер
