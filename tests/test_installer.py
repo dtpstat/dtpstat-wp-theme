@@ -216,11 +216,27 @@ class InstallerTests(unittest.TestCase):
             with self.subTest(path=relative):
                 subprocess.run(['php', '-l', str(BASE / relative)], check=True, capture_output=True)
 
-    def test_theme_external_urls_from_dotenv(self):
-        result = subprocess.run(['php', str(BASE / 'tests/theme_env_fixture.php')],
-                                check=True, capture_output=True, text=True)
-        self.assertIn('theme dotenv tests passed', result.stdout)
-
+    def test_theme_external_urls_from_generated_php(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            env = root / '.env'
+            env.write_text(
+                "DTP_MAP_URL=https://map.example.org/\\n"
+                "DTP_FRONTEND_URL=https://details.example.org/\\n"
+                "DTP_CONTACT_EMAIL=team@example.org\\n",
+                encoding='utf-8',
+            )
+            output = root / 'dtpstat-config.php'
+            subprocess.run(
+                [sys.executable, str(BASE / 'bin/generate-config.py'),
+                 '--env-file', str(env), '--output', str(output)],
+                check=True, capture_output=True, text=True,
+            )
+            result = subprocess.run(
+                ['php', str(BASE / 'tests/theme_env_fixture.php'), str(output)],
+                check=True, capture_output=True, text=True,
+            )
+            self.assertIn('theme compiled PHP config tests passed', result.stdout)
 
 
 if __name__ == '__main__':
