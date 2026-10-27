@@ -201,6 +201,7 @@ function dtp_env( $key, $default = '' ) {
 	static $vars = null;
 	if ( null === $vars ) {
 		$vars = [];
+		// Родительский .env приоритетнее, но недостающие ключи берём из WP/.env.
 		foreach ( [ dirname( ABSPATH ) . '/.env', ABSPATH . '/.env' ] as $file ) {
 			if ( ! is_readable( $file ) ) {
 				continue;
@@ -211,9 +212,11 @@ function dtp_env( $key, $default = '' ) {
 					continue;
 				}
 				[ $k, $v ] = explode( '=', $line, 2 );
-				$vars[ trim( $k ) ] = trim( $v, " \t\"'" );
+				$k = trim( $k );
+				if ( ! array_key_exists( $k, $vars ) ) {
+					$vars[ $k ] = trim( $v, " \\t\\\"'" );
+				}
 			}
-			break;
 		}
 	}
 	return $vars[ $key ] ?? $default;
