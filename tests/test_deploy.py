@@ -78,6 +78,30 @@ class DeployTests(unittest.TestCase):
         self.assertEqual((self.content / 'dtpstat-config.php').read_bytes(), config)
         self.assertEqual(len(list((self.content / 'dtpstat-releases').iterdir())), 1)
 
+    def test_failed_link_switch_restores_previous_config(self):
+        self.run_deploy()
+        old_target = self.dest.resolve()
+        old_config = (self.content / 'dtpstat-config.php').read_bytes()
+        self.env.write_text(
+            'DTP_MAP_URL=https://newmap.example.org\\n'
+            'DTP_FRONTEND_URL=https://details.example.org\\n',
+            encoding='utf-8',
+        )
+        (self.theme / 'functions.php').write_text('<?php // updated\\n', encoding='utf-8')
+        original_replace = os.replace
+
+        def fail_only_link_switch(src, dst):
+            if Path(dst) == self.dest:
+                raise OSError('simulated switch failure')
+            return original_replace(src, dst)
+
+        with patch.object(deploy.os, 'replace', side_effect=fail_only_link_switch):
+            with self.assertRaisesRegex(OSError, 'simulated'):
+                self.run_deploy()
+
+        self.assertEqual(self.dest.resolve(), old_target)
+        self.assertEqual((self.content / 'dtpstat-config.php').read_bytes(), old_config)
+
     def test_plain_directory_is_not_overwritten(self):
         self.dest.unlink()
         self.dest.mkdir()
