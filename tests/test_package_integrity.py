@@ -84,7 +84,10 @@ class PackageIntegrityTests(unittest.TestCase):
                 with self.subTest(id=media_id, file=filename):
                     candidate = uploads / filename
                     self.assertFalse(Path(filename).is_absolute())
-                    self.assertTrue(candidate.resolve().is_relative_to(root))
+                    try:
+                        candidate.resolve().relative_to(root)
+                    except ValueError:
+                        self.fail(f'Upload path escapes root: {filename}')
                     self.assertTrue(candidate.is_file(), f'Missing upload: {filename}')
 
 
