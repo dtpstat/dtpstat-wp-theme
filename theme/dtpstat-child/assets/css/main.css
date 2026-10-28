@@ -914,9 +914,13 @@ p.dtp-intro { font-size: 20px; line-height: 30px; }
 
 /* ---------- одиночный пост ---------- */
 
-.single .dtp-page__title { text-align: left; }
-.single .dtp-entry { max-width: 720px; }
-.dtp-postmeta { color: var(--navy-soft); font-size: 14px; margin-bottom: 24px; }
+/* шапка записи (заголовок/дата/обложка) — по центру, как на старом сайте */
+.single .dtp-page__title { text-align: center; }
+/* шапка чуть шире базовой колонки — обложка крупнее текстовой колонки */
+.single .dtp-page { max-width: 960px; }
+.single .dtp-entry { max-width: 720px; margin-left: auto; margin-right: auto; }
+/* дата/автор — по центру, 16px (на старом сайте .extra 16px в text-center) */
+.dtp-postmeta { color: var(--navy-soft); font-size: 16px; margin-bottom: 24px; text-align: center; }
 /* обложка записи: целиком, без кропа и карточной обёртки — как на старом
    сайте; обрезанные версии (dtp-card 16:9) — только в карточках сетки блога */
 .dtp-cover { margin-bottom: 32px; }
