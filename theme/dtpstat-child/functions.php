@@ -6,7 +6,7 @@
 
 add_action( 'wp_enqueue_scripts', function () {
 	$dir = get_stylesheet_directory_uri();
-	$ver = '0.2.40';
+	$ver = '0.2.41';
 
 	// Бургер-меню — на всех страницах (на главной футера нет).
 	wp_enqueue_script( 'dtpstat-main', $dir . '/assets/js/main.js', [], $ver, true );
@@ -48,13 +48,12 @@ add_action( 'after_setup_theme', function () {
 	 * («подвигать» картинку при назначении), поэтому размеры должны
 	 * совпадать с тем, что реально видно на сайте:
 	 *   dtp-card   — обложки карточек блога, 16:9 (как в вёрстке);
-	 *   dtp-person — фото команды 272×345 @2x;
-	 *   dtp-job    — фото вакансий 272×200 @2x.
-	 * Обложка записи выводится целиком (full), кроп ей не нужен.
+	 *   dtp-person — фото команды 272×345 @2x.
+	 * Обложка записи и фото вакансий выводятся целиком (full): на картинках
+	 * вакансий текст, кроп его режет.
 	 */
 	add_image_size( 'dtp-card', 480, 270, true );
 	add_image_size( 'dtp-person', 544, 690, true );
-	add_image_size( 'dtp-job', 544, 400, true );
 } );
 
 /** Размер основного контента (колонка 656px по макету + запас для медиа). */
@@ -369,9 +368,11 @@ add_shortcode( 'dtp_sponsors', function () {
 
 /**
  * [dtp_vacancies] — карточки «Станьте частью команды» собираются автоматически
- * из записей с меткой «Вакансия» (slug vacancy): фото = миниатюра записи,
- * заголовок = название записи (ссылка ведёт на полный текст), скилы = первый
- * <ul> из текста записи («вычленяются» из него), кнопка — письмо на почту.
+ * из записей с меткой «Вакансия» (slug vacancy): фото = миниатюра записи
+ * (целиком — на баннерах текст, кроп его режет), заголовок = название записи
+ * (ссылка ведёт на полный текст), скилы = первый <ul> из текста записи либо
+ * абзац «Если вы:» со строками через <br> (старый формат записей), кнопка —
+ * письмо на почту.
  */
 add_shortcode( 'dtp_vacancies', function () {
 	$tag = get_term_by( 'slug', 'vacancy', 'post_tag' );
@@ -391,9 +392,11 @@ add_shortcode( 'dtp_vacancies', function () {
 			: '';
 	}
 	$out = '<div class="dtp-jobs">';
+	// полный размер без srcset: в srcset просачиваются кропы старых генераций
+	add_filter( 'wp_calculate_image_srcset', '__return_empty_array' );
 	foreach ( $q->posts as $vacancy ) {
 		$title = get_the_title( $vacancy );
-		$img   = get_the_post_thumbnail( $vacancy, 'dtp-job', [ 'class' => 'dtp-job__img', 'alt' => $title ] );
+		$img   = get_the_post_thumbnail( $vacancy, 'full', [ 'class' => 'dtp-job__img', 'alt' => $title ] );
 		$out  .= '<div class="dtp-job">' . ( $img ?: '<div class="dtp-job__img"></div>' )
 			. '<h3 class="dtp-job__title"><a href="' . esc_url( get_permalink( $vacancy ) ) . '">' . esc_html( $title ) . '</a></h3>';
 		// скилы: первый <ul> в тексте записи (убрав gutenberg-комментарии)
@@ -406,6 +409,19 @@ add_shortcode( 'dtp_vacancies', function () {
 				}
 				$out .= '</ul>';
 			}
+		} elseif ( preg_match( '/Если вы:((?:(?!<\/p>).)*)/s', $vacancy->post_content, $req ) ) {
+			// старый формат: «…Если вы:</strong><br>- пункт<br>- пункт</p>» —
+			// строки одного абзаца через <br>, без списка
+			$chunk = preg_replace( '/<!--.*?-->/s', '', $req[1] );
+			$out  .= '<p>Если вы:</p><ul>';
+			foreach ( preg_split( '/<br\s*\/?>/i', $chunk ) as $li ) {
+				$li = trim( wp_strip_all_tags( $li ) );
+				$li = preg_replace( '/^[-–—]\s*/u', '', $li );
+				if ( $li !== '' ) {
+					$out .= '<li>' . esc_html( $li ) . '</li>';
+				}
+			}
+			$out .= '</ul>';
 		}
 		// футер-обёртка: авто-отступ сверху прижимает кнопку к низу плитки,
 		// чтобы в ряду карточек кнопки стояли на одной высоте
@@ -417,5 +433,6 @@ add_shortcode( 'dtp_vacancies', function () {
 		}
 		$out .= '</div></div>';
 	}
+	remove_filter( 'wp_calculate_image_srcset', '__return_empty_array' );
 	return $out . '</div>';
 } );

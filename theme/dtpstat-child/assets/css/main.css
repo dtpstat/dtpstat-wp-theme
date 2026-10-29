@@ -804,8 +804,10 @@ p.dtp-intro { font-size: 20px; line-height: 30px; }
 /* колонка: скилы разной длины, grid тянет карточки ряда в одну высоту —
    кнопку прижимаем к низу авто-отступом футера */
 .dtp-job { display: flex; flex-direction: column; background: var(--bg-soft); border-radius: 20px; padding-bottom: 20px; overflow: hidden; }
-/* фото вакансий: кроп 272×200, вплотную к верху плитки — скругляют углы карточки */
-.dtp-job__img { aspect-ratio: 272 / 200; border-radius: 20px 20px 0 0; object-fit: cover; width: 100%; }
+/* фото вакансий: целиком, без кропа (на баннерах текст) — пропорция 272×200
+   остаётся только заглушке без фото; вплотную к верху плитки */
+.dtp-job__img { aspect-ratio: 272 / 200; border-radius: 20px 20px 0 0; width: 100%; }
+img.dtp-job__img { display: block; height: auto; }
 /* текст карточки вакансии — с отступом 20 от краёв (по правке Ильи: в макете
    поля ≈14/190 ≈ 20 на карточке 272); селектор с .dtp-job — специфичностью
    выше .dtp-entry h3, который иначе обнуляет боковые margin заголовка */
