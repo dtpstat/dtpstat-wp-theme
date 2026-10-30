@@ -283,6 +283,9 @@ img { max-width: 100%; height: auto; display: block; }
 
 .dtp-map {
 	height: calc(100vh - var(--header-h));
+	/* svh: на мобильных 100vh больше видимой области (адресная строка) —
+	   низ айфрейма вылезал за экран; svh = минимальный видимый вьюпорт */
+	height: calc(100svh - var(--header-h));
 }
 /* цепочка обёрток от контента страницы до айфрейма — все на всю высоту */
 .dtp-map__in,
@@ -307,10 +310,12 @@ img { max-width: 100%; height: auto; display: block; }
 /* со статус-баром админа viewport съедает его высоту */
 .admin-bar .dtp-map {
 	height: calc(100vh - var(--header-h) - 32px);
+	height: calc(100svh - var(--header-h) - 32px);
 }
 @media (max-width: 782px) {
 	.admin-bar .dtp-map {
 		height: calc(100vh - var(--header-h) - 46px);
+		height: calc(100svh - var(--header-h) - 46px);
 	}
 }
 
